@@ -1,0 +1,17 @@
+node_modules
+
+.idea
+
+dist
+
+AGENTS.md
+CLAUDE.md
+PLAN.md
+
+.agents/
+.claude/
+.codex/
+.idea/
+.vite/
+
+.tmp/
