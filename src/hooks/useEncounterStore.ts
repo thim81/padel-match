@@ -35,5 +35,12 @@ export function useEncounterStore() {
     [setEncounters]
   );
 
-  return { encounters, addEncounter, updateEncounter, getEncounter, deleteEncounter };
+  const setEncountersState = useCallback(
+    (nextEncounters: Encounter[]) => {
+      setEncounters(nextEncounters);
+    },
+    [setEncounters],
+  );
+
+  return { encounters, addEncounter, updateEncounter, getEncounter, deleteEncounter, setEncountersState };
 }

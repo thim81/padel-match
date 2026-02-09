@@ -31,5 +31,12 @@ export function useTeamStore() {
     [setPlayers]
   );
 
-  return { players, addPlayer, updatePlayer, removePlayer };
+  const setPlayersState = useCallback(
+    (nextPlayers: Player[]) => {
+      setPlayers(nextPlayers);
+    },
+    [setPlayers],
+  );
+
+  return { players, addPlayer, updatePlayer, removePlayer, setPlayersState };
 }

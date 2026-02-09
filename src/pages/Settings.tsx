@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Minus, CheckCircle2 } from 'lucide-react';
+import { Plus, Minus, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useTeamStore } from '@/hooks/useTeamStore';
 import { Input } from '@/components/ui/input';
 import PlayerAvatar from '@/components/PlayerAvatar';
+import { useSyncSettings } from '@/hooks/useSyncSettings';
 
 export default function Settings() {
   const { players, addPlayer, updatePlayer, removePlayer } = useTeamStore();
+  const { syncSettings, updateSyncToken } = useSyncSettings();
   const [newName, setNewName] = useState('');
+  const [syncTokenValue, setSyncTokenValue] = useState(syncSettings.syncToken);
 
   const handleAdd = () => {
     const trimmed = newName.trim();
@@ -18,6 +21,17 @@ export default function Settings() {
   };
 
   const teamComplete = players.length === 4;
+
+  useEffect(() => {
+    setSyncTokenValue(syncSettings.syncToken);
+  }, [syncSettings.syncToken]);
+
+  const handleSyncTokenBlur = () => {
+    const normalized = syncTokenValue.trim();
+    if (normalized !== syncSettings.syncToken) {
+      updateSyncToken(normalized);
+    }
+  };
 
   return (
     <div className="flex flex-col px-4 pt-14 pb-8 gap-6">
@@ -100,6 +114,30 @@ export default function Settings() {
             </div>
           </div>
         )}
+      </section>
+
+      <section>
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Cloud Sync
+          </h2>
+        </div>
+        <div className="ios-grouped">
+          <div className="px-4 py-3">
+            <Input
+              type="password"
+              value={syncTokenValue}
+              onChange={(e) => setSyncTokenValue(e.target.value)}
+              onBlur={handleSyncTokenBlur}
+              placeholder="Enter sync key"
+              className="border-border/60 h-10 text-sm rounded-lg"
+            />
+            <p className="mt-2 text-[11px] leading-tight text-muted-foreground">
+              Use the same key on multiple devices to keep players and encounters in sync.
+            </p>
+          </div>
+        </div>
       </section>
     </div>
   );
