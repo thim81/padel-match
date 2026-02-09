@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import Settings from "./pages/Settings";
@@ -25,23 +25,43 @@ const queryClient = new QueryClient();
 const App = () => {
   const { players, setPlayersState } = useTeamStore();
   const { encounters, setEncountersState } = useEncounterStore();
-  const { syncSettings, setSyncSettingsState, importSyncToken } = useSyncSettings();
+  const { activeTeam, syncToken, syncEnabled, importTeamFromToken } = useSyncSettings();
+  const previousSyncToken = useRef('');
 
   useEffect(() => {
     const importedToken = getSyncTokenFromUrl(window.location.href);
     if (!importedToken) return;
 
-    importSyncToken(importedToken);
+    importTeamFromToken(importedToken);
     removeSyncTokenFromCurrentUrl();
     const parsed = parseSyncToken(importedToken);
     toast.success(parsed ? `Joined team: ${parsed.teamName}` : "Sync key imported");
-  }, [importSyncToken]);
+  }, [importTeamFromToken]);
 
-  useAppSync(syncSettings.syncToken, players, encounters, syncSettings, (state) => {
+  const effectiveSyncToken = syncEnabled ? syncToken : '';
+
+  useEffect(() => {
+    if (previousSyncToken.current && previousSyncToken.current !== effectiveSyncToken) {
+      setPlayersState([]);
+      setEncountersState([]);
+    }
+    previousSyncToken.current = effectiveSyncToken;
+  }, [effectiveSyncToken, setPlayersState, setEncountersState]);
+
+  useAppSync(
+    effectiveSyncToken,
+    players,
+    encounters,
+    {
+      teamName: activeTeam?.teamName ?? "",
+      teamSecret: activeTeam?.teamSecret ?? "",
+      syncToken: effectiveSyncToken,
+    },
+    (state) => {
     setPlayersState(state.players);
     setEncountersState(state.encounters);
-    setSyncSettingsState(state.settings);
-  });
+    },
+  );
 
   return (
     <QueryClientProvider client={queryClient}>

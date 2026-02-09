@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Clock, Trophy, ChevronRight, Play } from 'lucide-react';
+import { Plus, Clock, Trophy, ChevronRight, Play, Users } from 'lucide-react';
 import { useEncounterStore } from '@/hooks/useEncounterStore';
+import { useSyncSettings } from '@/hooks/useSyncSettings';
 
 const Index = () => {
   const navigate = useNavigate();
   const { encounters } = useEncounterStore();
+  const { teams, activeTeam, setActiveTeam } = useSyncSettings();
 
   const inProgress = encounters.filter(e => e.status === 'in-progress');
   const completed = encounters.filter(e => e.status === 'completed');
@@ -28,6 +30,31 @@ const Index = () => {
         <p className="text-sm text-muted-foreground mt-1">
           Track your matches and interclub scores
         </p>
+        <div className="mt-3 flex justify-center">
+          {teams.length > 0 ? (
+            <div className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-card px-3 py-2">
+              <Users className="w-4 h-4 text-muted-foreground" />
+              <select
+                value={activeTeam?.id ?? ''}
+                onChange={(e) => setActiveTeam(e.target.value)}
+                className="bg-transparent text-sm text-foreground focus:outline-none"
+              >
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.teamName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate('/settings')}
+              className="text-xs font-medium text-primary"
+            >
+              Create team space in Settings
+            </button>
+          )}
+        </div>
       </motion.div>
 
       {/* Quick stats */}

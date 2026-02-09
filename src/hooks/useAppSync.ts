@@ -2,7 +2,12 @@ import { useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Encounter, Player } from '@/types/encounter';
 import { fetchRemoteState, pushLocalState, SyncState } from '@/lib/sync';
-import { SyncSettings } from './useSyncSettings';
+
+interface ActiveSyncSettings {
+  teamName: string;
+  teamSecret: string;
+  syncToken: string;
+}
 
 function normalizeRemoteState(state: SyncState): SyncState {
   return {
@@ -20,7 +25,7 @@ export function useAppSync(
   syncToken: string,
   players: Player[],
   encounters: Encounter[],
-  settings: SyncSettings,
+  settings: ActiveSyncSettings,
   onSyncState: (state: SyncState) => void,
 ) {
   const lastSyncedState = useRef('');

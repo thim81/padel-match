@@ -7,12 +7,22 @@ import PlayerAvatar from '@/components/PlayerAvatar';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
 import { createSyncShareLink } from '@/lib/share';
 import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function Settings() {
   const { players, addPlayer, updatePlayer, removePlayer } = useTeamStore();
-  const { syncSettings, initializeTeamSpace, updateTeamName } = useSyncSettings();
+  const { teams, activeTeam, syncEnabled, setSyncEnabled, createTeamSpace, setActiveTeam, removeTeam } = useSyncSettings();
   const [newName, setNewName] = useState('');
-  const [teamNameInput, setTeamNameInput] = useState(syncSettings.teamName);
+  const [teamNameInput, setTeamNameInput] = useState(activeTeam?.teamName ?? '');
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
 
   const handleAdd = () => {
     const trimmed = newName.trim();
@@ -23,22 +33,11 @@ export default function Settings() {
   };
 
   const teamComplete = players.length === 4;
-  const hasTeamSpace = Boolean(syncSettings.syncToken && syncSettings.teamSecret);
+  const hasTeamSpace = Boolean(activeTeam?.syncToken);
 
   useEffect(() => {
-    setTeamNameInput(syncSettings.teamName);
-  }, [syncSettings.teamName]);
-
-  const handleSaveTeamName = () => {
-    const trimmed = teamNameInput.trim();
-    if (!trimmed) {
-      toast.error('Enter a team name');
-      return;
-    }
-
-    updateTeamName(trimmed);
-    toast.success('Team name updated');
-  };
+    setTeamNameInput(activeTeam?.teamName ?? '');
+  }, [activeTeam?.id, activeTeam?.teamName]);
 
   const handleCreateTeamSpace = () => {
     const trimmed = teamNameInput.trim();
@@ -47,24 +46,26 @@ export default function Settings() {
       return;
     }
 
-    initializeTeamSpace(trimmed);
+    createTeamSpace(trimmed);
     toast.success(`Team space created for ${trimmed}`);
+    setIsTeamModalOpen(false);
+    setTeamNameInput('');
   };
 
   const getShareLink = () => {
-    if (!syncSettings.syncToken) {
+    if (!activeTeam?.syncToken) {
       toast.error('Create your team space first');
       return null;
     }
 
-    return createSyncShareLink(syncSettings.syncToken);
+    return createSyncShareLink(activeTeam.syncToken);
   };
 
   const handleNativeShare = async () => {
     const shareLink = getShareLink();
     if (!shareLink) return;
 
-    const teamLabel = syncSettings.teamName || 'my team';
+    const teamLabel = activeTeam?.teamName || 'my team';
     const shareText = `Join ${teamLabel} on Padel Matches: ${shareLink}`;
 
     if (navigator.share) {
@@ -91,13 +92,20 @@ export default function Settings() {
     toast.success('Link copied');
   };
 
-  const shareLink = syncSettings.syncToken ? createSyncShareLink(syncSettings.syncToken) : '';
+  const shareLink = activeTeam?.syncToken ? createSyncShareLink(activeTeam.syncToken) : '';
   const whatsappHref = shareLink
-    ? `https://wa.me/?text=${encodeURIComponent(`Join ${syncSettings.teamName || 'my team'} on Padel Matches: ${shareLink}`)}`
+    ? `https://wa.me/?text=${encodeURIComponent(`Join ${activeTeam?.teamName || 'my team'} on Padel Matches: ${shareLink}`)}`
     : '#';
   const smsHref = shareLink
-    ? `sms:?&body=${encodeURIComponent(`Join ${syncSettings.teamName || 'my team'} on Padel Matches: ${shareLink}`)}`
+    ? `sms:?&body=${encodeURIComponent(`Join ${activeTeam?.teamName || 'my team'} on Padel Matches: ${shareLink}`)}`
     : '#';
+
+  const handleRemoveActiveTeam = () => {
+    if (!activeTeam) return;
+    const confirmed = window.confirm(`Remove team "${activeTeam.teamName}" from this device?`);
+    if (!confirmed) return;
+    removeTeam(activeTeam.id);
+  };
 
   return (
     <div className="flex flex-col px-4 pt-14 pb-8 gap-6">
@@ -191,22 +199,46 @@ export default function Settings() {
         </div>
         <div className="ios-grouped">
           <div className="px-4 py-3 space-y-2">
-            <Input
-              value={teamNameInput}
-              onChange={(e) => setTeamNameInput(e.target.value)}
-              placeholder="Enter team name"
-              className="border-border/60 h-10 text-sm rounded-lg"
-            />
+            <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/20 px-3 py-2.5">
+              <div>
+                <p className="text-sm font-medium text-foreground">Enable Cloud Sync</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {syncEnabled ? 'Sync is active for the selected team.' : 'Sync is off. Data stays local on this device.'}
+                </p>
+              </div>
+              <Switch checked={syncEnabled} onCheckedChange={setSyncEnabled} />
+            </div>
             <button
-              onClick={hasTeamSpace ? handleSaveTeamName : handleCreateTeamSpace}
+              onClick={() => setIsTeamModalOpen(true)}
               className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold active:scale-[0.98] transition-transform"
             >
-              {hasTeamSpace ? 'Save Team Name' : 'Create Team Space'}
+              {hasTeamSpace ? 'Add New Team' : 'Create Team Space'}
             </button>
             {hasTeamSpace && (
-              <p className="text-[11px] leading-tight text-success">
-                Team space active. Secret is stored securely and hidden.
-              </p>
+              <>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={activeTeam?.id ?? ''}
+                    onChange={(e) => setActiveTeam(e.target.value)}
+                    className="flex-1 h-10 rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground"
+                  >
+                    {teams.map((team) => (
+                      <option key={team.id} value={team.id}>
+                        {team.teamName}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleRemoveActiveTeam}
+                    className="h-10 px-3 rounded-lg bg-destructive/10 text-destructive text-sm font-medium"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <p className="text-[11px] leading-tight text-success">
+                  Active team: {activeTeam?.teamName}. Secret is stored securely and hidden.
+                </p>
+              </>
             )}
             <p className="mt-2 text-[11px] leading-tight text-muted-foreground">
               Team name is visible. A hidden team secret is generated automatically for secure sync.
@@ -233,9 +265,9 @@ export default function Settings() {
 
             <div className="grid grid-cols-3 gap-2">
               <a
-                href={syncSettings.syncToken ? whatsappHref : undefined}
+                href={activeTeam?.syncToken ? whatsappHref : undefined}
                 className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium ${
-                  syncSettings.syncToken
+                  activeTeam?.syncToken
                     ? 'bg-success/10 text-success'
                     : 'bg-muted text-muted-foreground pointer-events-none'
                 }`}
@@ -244,9 +276,9 @@ export default function Settings() {
                 WhatsApp
               </a>
               <a
-                href={syncSettings.syncToken ? smsHref : undefined}
+                href={activeTeam?.syncToken ? smsHref : undefined}
                 className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium ${
-                  syncSettings.syncToken
+                  activeTeam?.syncToken
                     ? 'bg-secondary text-foreground'
                     : 'bg-muted text-muted-foreground pointer-events-none'
                 }`}
@@ -257,7 +289,7 @@ export default function Settings() {
               <button
                 onClick={handleCopyLink}
                 className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium ${
-                  syncSettings.syncToken
+                  activeTeam?.syncToken
                     ? 'bg-secondary text-foreground'
                     : 'bg-muted text-muted-foreground pointer-events-none'
                 }`}
@@ -273,6 +305,39 @@ export default function Settings() {
           </div>
         </div>
       </section>
+
+      <Dialog open={isTeamModalOpen} onOpenChange={setIsTeamModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{hasTeamSpace ? 'Add New Team' : 'Create Team Space'}</DialogTitle>
+            <DialogDescription>
+              Enter a team name. We will generate a hidden team secret automatically and create a secure sync space.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-1">
+            <Input
+              value={teamNameInput}
+              onChange={(e) => setTeamNameInput(e.target.value)}
+              placeholder="Team name"
+              className="h-10 text-sm"
+            />
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setIsTeamModalOpen(false)}
+              className="px-4 py-2 rounded-lg border border-border bg-background text-foreground text-sm font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCreateTeamSpace}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold"
+            >
+              {hasTeamSpace ? 'Add Team' : 'Create Team'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
