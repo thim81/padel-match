@@ -69,9 +69,8 @@ This project includes a Pages Function route at `/api/state` in:
 Required Cloudflare Pages bindings/vars:
 
 - KV binding: `PADEL_MATCHES_KV`
-- Environment variable/secret: `AUTH_TOKEN`
 
-Use the same value in the app Settings `Cloud Sync` key field and `AUTH_TOKEN` to authorize sync requests.
+The app sends a team-specific sync token via `x-auth-token`. The backend hashes that token and stores state under an isolated KV key namespace per team.
 
 ## How can I deploy this project?
 

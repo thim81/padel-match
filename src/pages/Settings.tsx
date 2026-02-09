@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Minus, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Plus, Minus, CheckCircle2, RefreshCw, Share2, MessageCircle, MessageSquare, Copy } from 'lucide-react';
 import { useTeamStore } from '@/hooks/useTeamStore';
 import { Input } from '@/components/ui/input';
 import PlayerAvatar from '@/components/PlayerAvatar';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
+import { createSyncShareLink } from '@/lib/share';
+import { toast } from 'sonner';
 
 export default function Settings() {
   const { players, addPlayer, updatePlayer, removePlayer } = useTeamStore();
-  const { syncSettings, updateSyncToken } = useSyncSettings();
+  const { syncSettings, initializeTeamSpace, updateTeamName } = useSyncSettings();
   const [newName, setNewName] = useState('');
-  const [syncTokenValue, setSyncTokenValue] = useState(syncSettings.syncToken);
+  const [teamNameInput, setTeamNameInput] = useState(syncSettings.teamName);
 
   const handleAdd = () => {
     const trimmed = newName.trim();
@@ -21,17 +23,81 @@ export default function Settings() {
   };
 
   const teamComplete = players.length === 4;
+  const hasTeamSpace = Boolean(syncSettings.syncToken && syncSettings.teamSecret);
 
   useEffect(() => {
-    setSyncTokenValue(syncSettings.syncToken);
-  }, [syncSettings.syncToken]);
+    setTeamNameInput(syncSettings.teamName);
+  }, [syncSettings.teamName]);
 
-  const handleSyncTokenBlur = () => {
-    const normalized = syncTokenValue.trim();
-    if (normalized !== syncSettings.syncToken) {
-      updateSyncToken(normalized);
+  const handleSaveTeamName = () => {
+    const trimmed = teamNameInput.trim();
+    if (!trimmed) {
+      toast.error('Enter a team name');
+      return;
     }
+
+    updateTeamName(trimmed);
+    toast.success('Team name updated');
   };
+
+  const handleCreateTeamSpace = () => {
+    const trimmed = teamNameInput.trim();
+    if (!trimmed) {
+      toast.error('Enter a team name first');
+      return;
+    }
+
+    initializeTeamSpace(trimmed);
+    toast.success(`Team space created for ${trimmed}`);
+  };
+
+  const getShareLink = () => {
+    if (!syncSettings.syncToken) {
+      toast.error('Create your team space first');
+      return null;
+    }
+
+    return createSyncShareLink(syncSettings.syncToken);
+  };
+
+  const handleNativeShare = async () => {
+    const shareLink = getShareLink();
+    if (!shareLink) return;
+
+    const teamLabel = syncSettings.teamName || 'my team';
+    const shareText = `Join ${teamLabel} on Padel Matches: ${shareLink}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Padel Matches',
+          text: `Join ${teamLabel} on Padel Matches`,
+          url: shareLink,
+        });
+      } catch {
+        // Share sheet was dismissed or failed.
+      }
+      return;
+    }
+
+    await navigator.clipboard.writeText(shareText);
+    toast.success('Share link copied');
+  };
+
+  const handleCopyLink = async () => {
+    const shareLink = getShareLink();
+    if (!shareLink) return;
+    await navigator.clipboard.writeText(shareLink);
+    toast.success('Link copied');
+  };
+
+  const shareLink = syncSettings.syncToken ? createSyncShareLink(syncSettings.syncToken) : '';
+  const whatsappHref = shareLink
+    ? `https://wa.me/?text=${encodeURIComponent(`Join ${syncSettings.teamName || 'my team'} on Padel Matches: ${shareLink}`)}`
+    : '#';
+  const smsHref = shareLink
+    ? `sms:?&body=${encodeURIComponent(`Join ${syncSettings.teamName || 'my team'} on Padel Matches: ${shareLink}`)}`
+    : '#';
 
   return (
     <div className="flex flex-col px-4 pt-14 pb-8 gap-6">
@@ -124,17 +190,85 @@ export default function Settings() {
           </h2>
         </div>
         <div className="ios-grouped">
-          <div className="px-4 py-3">
+          <div className="px-4 py-3 space-y-2">
             <Input
-              type="password"
-              value={syncTokenValue}
-              onChange={(e) => setSyncTokenValue(e.target.value)}
-              onBlur={handleSyncTokenBlur}
-              placeholder="Enter sync key"
+              value={teamNameInput}
+              onChange={(e) => setTeamNameInput(e.target.value)}
+              placeholder="Enter team name"
               className="border-border/60 h-10 text-sm rounded-lg"
             />
+            <button
+              onClick={hasTeamSpace ? handleSaveTeamName : handleCreateTeamSpace}
+              className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold active:scale-[0.98] transition-transform"
+            >
+              {hasTeamSpace ? 'Save Team Name' : 'Create Team Space'}
+            </button>
+            {hasTeamSpace && (
+              <p className="text-[11px] leading-tight text-success">
+                Team space active. Secret is stored securely and hidden.
+              </p>
+            )}
             <p className="mt-2 text-[11px] leading-tight text-muted-foreground">
-              Use the same key on multiple devices to keep players and encounters in sync.
+              Team name is visible. A hidden team secret is generated automatically for secure sync.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <Share2 className="w-3.5 h-3.5 text-muted-foreground" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Share App
+          </h2>
+        </div>
+        <div className="ios-grouped">
+          <div className="px-4 py-3 flex flex-col gap-2.5">
+            <button
+              onClick={handleNativeShare}
+              className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold active:scale-[0.98] transition-transform"
+            >
+              Share App Link
+            </button>
+
+            <div className="grid grid-cols-3 gap-2">
+              <a
+                href={syncSettings.syncToken ? whatsappHref : undefined}
+                className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium ${
+                  syncSettings.syncToken
+                    ? 'bg-success/10 text-success'
+                    : 'bg-muted text-muted-foreground pointer-events-none'
+                }`}
+              >
+                <MessageCircle className="w-4 h-4" />
+                WhatsApp
+              </a>
+              <a
+                href={syncSettings.syncToken ? smsHref : undefined}
+                className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium ${
+                  syncSettings.syncToken
+                    ? 'bg-secondary text-foreground'
+                    : 'bg-muted text-muted-foreground pointer-events-none'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4" />
+                SMS
+              </a>
+              <button
+                onClick={handleCopyLink}
+                className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium ${
+                  syncSettings.syncToken
+                    ? 'bg-secondary text-foreground'
+                    : 'bg-muted text-muted-foreground pointer-events-none'
+                }`}
+              >
+                <Copy className="w-4 h-4" />
+                Copy
+              </button>
+            </div>
+
+            <p className="text-[11px] leading-tight text-muted-foreground">
+              Shares an app link with your encoded team sync token. Opening the link imports the team automatically.
             </p>
           </div>
         </div>

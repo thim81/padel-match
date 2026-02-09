@@ -4,6 +4,8 @@ export interface SyncState {
   players: Player[];
   encounters: Encounter[];
   settings: {
+    teamName?: string;
+    teamSecret?: string;
     syncToken: string;
   };
 }

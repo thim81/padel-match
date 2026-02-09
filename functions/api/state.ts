@@ -1,9 +1,8 @@
 interface Env {
   PADEL_MATCHES_KV: KVNamespace;
-  AUTH_TOKEN: string;
 }
 
-const STORAGE_KEY = 'padel-matches-state';
+const STORAGE_KEY_PREFIX = 'padel-matches-state';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
@@ -18,18 +17,23 @@ const getAuthToken = (request: Request) => {
   return request.headers.get('x-auth-token') || '';
 };
 
-const isAuthorized = (request: Request, env: Env) => {
-  const token = env.AUTH_TOKEN;
-  if (!token) return false;
-  return getAuthToken(request) === token;
-};
+const tokenEncoder = new TextEncoder();
+
+async function deriveStorageKeyFromToken(token: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', tokenEncoder.encode(token));
+  const digestArray = Array.from(new Uint8Array(digest));
+  const hex = digestArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  return `${STORAGE_KEY_PREFIX}:${hex}`;
+}
 
 export const onRequestGet: PagesFunction<Env> = async ({ env, request }) => {
-  if (!isAuthorized(request, env)) {
+  const token = getAuthToken(request);
+  if (!token) {
     return new Response('Unauthorized', { status: 401, headers: corsHeaders });
   }
 
-  const stored = await env.PADEL_MATCHES_KV.get(STORAGE_KEY);
+  const storageKey = await deriveStorageKeyFromToken(token);
+  const stored = await env.PADEL_MATCHES_KV.get(storageKey);
   if (!stored) {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -45,7 +49,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ env, request }) => {
 };
 
 export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
-  if (!isAuthorized(request, env)) {
+  const token = getAuthToken(request);
+  if (!token) {
     return new Response('Unauthorized', { status: 401, headers: corsHeaders });
   }
 
@@ -56,7 +61,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     return new Response('Invalid JSON', { status: 400, headers: corsHeaders });
   }
 
-  await env.PADEL_MATCHES_KV.put(STORAGE_KEY, JSON.stringify(body));
+  const storageKey = await deriveStorageKeyFromToken(token);
+  await env.PADEL_MATCHES_KV.put(storageKey, JSON.stringify(body));
 
   return new Response(null, {
     status: 204,

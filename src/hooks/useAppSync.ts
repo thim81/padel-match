@@ -9,6 +9,8 @@ function normalizeRemoteState(state: SyncState): SyncState {
     players: Array.isArray(state.players) ? state.players : [],
     encounters: Array.isArray(state.encounters) ? state.encounters : [],
     settings: {
+      teamName: state.settings?.teamName ?? '',
+      teamSecret: state.settings?.teamSecret ?? '',
       syncToken: state.settings?.syncToken ?? '',
     },
   };
