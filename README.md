@@ -1,3 +1,7 @@
+# Padel Match
+
+Manage your Padel matches & interclub games in one place.
+
 ## Cloud Sync (Cloudflare Pages)
 
 This project includes a Pages Function route at `/api/state` in:
