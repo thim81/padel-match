@@ -1,11 +1,14 @@
 import { Encounter } from '@/types/encounter';
 import { useLocalStorage } from './useLocalStorage';
 import { useCallback } from 'react';
+import { useSyncSettings } from './useSyncSettings';
 
-const STORAGE_KEY = 'padel-encounters';
+const STORAGE_KEY_PREFIX = 'padel-encounters';
 
 export function useEncounterStore() {
-  const [encounters, setEncounters] = useLocalStorage<Encounter[]>(STORAGE_KEY, []);
+  const { activeTeam } = useSyncSettings();
+  const storageKey = `${STORAGE_KEY_PREFIX}:${activeTeam?.id ?? 'local'}`;
+  const [encounters, setEncounters] = useLocalStorage<Encounter[]>(storageKey, []);
 
   const addEncounter = useCallback(
     (encounter: Encounter) => {

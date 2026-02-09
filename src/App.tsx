@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import Settings from "./pages/Settings";
@@ -26,7 +26,6 @@ const App = () => {
   const { players, setPlayersState } = useTeamStore();
   const { encounters, setEncountersState } = useEncounterStore();
   const { activeTeam, syncToken, syncEnabled, importTeamFromToken } = useSyncSettings();
-  const previousSyncToken = useRef('');
 
   useEffect(() => {
     const importedToken = getSyncTokenFromUrl(window.location.href);
@@ -39,14 +38,6 @@ const App = () => {
   }, [importTeamFromToken]);
 
   const effectiveSyncToken = syncEnabled ? syncToken : '';
-
-  useEffect(() => {
-    if (previousSyncToken.current && previousSyncToken.current !== effectiveSyncToken) {
-      setPlayersState([]);
-      setEncountersState([]);
-    }
-    previousSyncToken.current = effectiveSyncToken;
-  }, [effectiveSyncToken, setPlayersState, setEncountersState]);
 
   useAppSync(
     effectiveSyncToken,

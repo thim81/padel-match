@@ -1,11 +1,14 @@
 import { Player } from '@/types/encounter';
 import { useLocalStorage } from './useLocalStorage';
 import { useCallback } from 'react';
+import { useSyncSettings } from './useSyncSettings';
 
-const STORAGE_KEY = 'padel-team-players';
+const STORAGE_KEY_PREFIX = 'padel-team-players';
 
 export function useTeamStore() {
-  const [players, setPlayers] = useLocalStorage<Player[]>(STORAGE_KEY, []);
+  const { activeTeam } = useSyncSettings();
+  const storageKey = `${STORAGE_KEY_PREFIX}:${activeTeam?.id ?? 'local'}`;
+  const [players, setPlayers] = useLocalStorage<Player[]>(storageKey, []);
 
   const addPlayer = useCallback(
     (name: string) => {
