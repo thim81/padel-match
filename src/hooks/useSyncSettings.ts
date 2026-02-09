@@ -21,7 +21,7 @@ export interface SyncSettings {
 const DEFAULT_SYNC_SETTINGS: SyncSettings = {
   teams: [],
   activeTeamId: null,
-  syncEnabled: false,
+  syncEnabled: false
 };
 
 function makeTeamSpace(teamName: string, teamSecret: string): TeamSpace {
@@ -34,7 +34,7 @@ function makeTeamSpace(teamName: string, teamSecret: string): TeamSpace {
     teamName: normalizedName,
     teamSecret: normalizedSecret,
     syncToken,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date().toISOString()
   };
 }
 
@@ -64,18 +64,16 @@ function normalizeSyncSettings(raw: unknown): SyncSettings {
           teamName: normalizedName,
           teamSecret: normalizedSecret,
           syncToken: createSyncToken(normalizedName, normalizedSecret || parsed?.teamSecret || ''),
-          createdAt: team.createdAt || new Date().toISOString(),
+          createdAt: team.createdAt || new Date().toISOString()
         };
       })
       .filter((team) => Boolean(team.teamSecret));
 
     const activeTeamId = teams.some((team) => team.id === candidate.activeTeamId)
       ? (candidate.activeTeamId as string)
-      : teams[0]?.id ?? null;
+      : (teams[0]?.id ?? null);
     const syncEnabled =
-      typeof candidate.syncEnabled === 'boolean'
-        ? candidate.syncEnabled
-        : teams.length > 0;
+      typeof candidate.syncEnabled === 'boolean' ? candidate.syncEnabled : teams.length > 0;
 
     return { teams, activeTeamId, syncEnabled };
   }
@@ -98,11 +96,14 @@ function normalizeSyncSettings(raw: unknown): SyncSettings {
 }
 
 export function useSyncSettings() {
-  const [storedSettings, setStoredSettings] = useLocalStorage<SyncSettings>(STORAGE_KEY, DEFAULT_SYNC_SETTINGS);
+  const [storedSettings, setStoredSettings] = useLocalStorage<SyncSettings>(
+    STORAGE_KEY,
+    DEFAULT_SYNC_SETTINGS
+  );
   const syncSettings = useMemo(() => normalizeSyncSettings(storedSettings), [storedSettings]);
   const activeTeam = useMemo(
     () => syncSettings.teams.find((team) => team.id === syncSettings.activeTeamId) ?? null,
-    [syncSettings.activeTeamId, syncSettings.teams],
+    [syncSettings.activeTeamId, syncSettings.teams]
   );
 
   const createTeamSpace = useCallback(
@@ -121,11 +122,11 @@ export function useSyncSettings() {
         return {
           teams: [team, ...prev.teams],
           activeTeamId: team.id,
-          syncEnabled: true,
+          syncEnabled: true
         };
       });
     },
-    [setStoredSettings],
+    [setStoredSettings]
   );
 
   const updateActiveTeamName = useCallback(
@@ -136,14 +137,16 @@ export function useSyncSettings() {
       const updated = makeTeamSpace(trimmed, activeTeam.teamSecret);
       setStoredSettings((prevRaw) => {
         const prev = normalizeSyncSettings(prevRaw);
-        const teams = prev.teams.map((team) => (team.id === activeTeam.id ? { ...updated, createdAt: team.createdAt } : team));
+        const teams = prev.teams.map((team) =>
+          team.id === activeTeam.id ? { ...updated, createdAt: team.createdAt } : team
+        );
         return {
           teams,
-          activeTeamId: updated.id,
+          activeTeamId: updated.id
         };
       });
     },
-    [activeTeam, setStoredSettings],
+    [activeTeam, setStoredSettings]
   );
 
   const importTeamFromToken = useCallback(
@@ -162,13 +165,13 @@ export function useSyncSettings() {
         return {
           teams: [team, ...prev.teams],
           activeTeamId: team.id,
-          syncEnabled: true,
+          syncEnabled: true
         };
       });
 
       return team;
     },
-    [setStoredSettings],
+    [setStoredSettings]
   );
 
   const setActiveTeam = useCallback(
@@ -178,11 +181,11 @@ export function useSyncSettings() {
         if (!prev.teams.some((team) => team.id === teamId)) return prev;
         return {
           ...prev,
-          activeTeamId: teamId,
+          activeTeamId: teamId
         };
       });
     },
-    [setStoredSettings],
+    [setStoredSettings]
   );
 
   const removeTeam = useCallback(
@@ -190,15 +193,16 @@ export function useSyncSettings() {
       setStoredSettings((prevRaw) => {
         const prev = normalizeSyncSettings(prevRaw);
         const remaining = prev.teams.filter((team) => team.id !== teamId);
-        const nextActive = prev.activeTeamId === teamId ? (remaining[0]?.id ?? null) : prev.activeTeamId;
+        const nextActive =
+          prev.activeTeamId === teamId ? (remaining[0]?.id ?? null) : prev.activeTeamId;
         return {
           teams: remaining,
           activeTeamId: nextActive,
-          syncEnabled: remaining.length > 0 ? prev.syncEnabled : false,
+          syncEnabled: remaining.length > 0 ? prev.syncEnabled : false
         };
       });
     },
-    [setStoredSettings],
+    [setStoredSettings]
   );
 
   const setSyncEnabled = useCallback(
@@ -207,11 +211,11 @@ export function useSyncSettings() {
         const prev = normalizeSyncSettings(prevRaw);
         return {
           ...prev,
-          syncEnabled: enabled,
+          syncEnabled: enabled
         };
       });
     },
-    [setStoredSettings],
+    [setStoredSettings]
   );
 
   return {
@@ -225,6 +229,6 @@ export function useSyncSettings() {
     importTeamFromToken,
     setActiveTeam,
     removeTeam,
-    setSyncEnabled,
+    setSyncEnabled
   };
 }

@@ -16,8 +16,8 @@ function normalizeRemoteState(state: SyncState): SyncState {
     settings: {
       teamName: state.settings?.teamName ?? '',
       teamSecret: state.settings?.teamSecret ?? '',
-      syncToken: state.settings?.syncToken ?? '',
-    },
+      syncToken: state.settings?.syncToken ?? ''
+    }
   };
 }
 
@@ -26,7 +26,7 @@ export function useAppSync(
   players: Player[],
   encounters: Encounter[],
   settings: ActiveSyncSettings,
-  onSyncState: (state: SyncState) => void,
+  onSyncState: (state: SyncState) => void
 ) {
   const lastSyncedState = useRef('');
   const initializedToken = useRef<string | null>(null);
@@ -35,7 +35,7 @@ export function useAppSync(
     return {
       players,
       encounters,
-      settings,
+      settings
     };
   }, [players, encounters, settings]);
 
@@ -65,7 +65,7 @@ export function useAppSync(
         if (showSuccessToast) toast.success('Synced successfully');
       }
     },
-    [syncToken, getLocalState, onSyncState],
+    [syncToken, getLocalState, onSyncState]
   );
 
   useEffect(() => {

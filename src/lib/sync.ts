@@ -14,8 +14,8 @@ export async function fetchRemoteState(token: string): Promise<SyncState | null>
   try {
     const response = await fetch('/api/state', {
       headers: {
-        'x-auth-token': token,
-      },
+        'x-auth-token': token
+      }
     });
 
     if (response.status === 204) {
@@ -39,9 +39,9 @@ export async function pushLocalState(token: string, state: SyncState): Promise<b
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-auth-token': token,
+        'x-auth-token': token
       },
-      body: JSON.stringify(state),
+      body: JSON.stringify(state)
     });
 
     if (!response.ok) {

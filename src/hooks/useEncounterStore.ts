@@ -42,8 +42,15 @@ export function useEncounterStore() {
     (nextEncounters: Encounter[]) => {
       setEncounters(nextEncounters);
     },
-    [setEncounters],
+    [setEncounters]
   );
 
-  return { encounters, addEncounter, updateEncounter, getEncounter, deleteEncounter, setEncountersState };
+  return {
+    encounters,
+    addEncounter,
+    updateEncounter,
+    getEncounter,
+    deleteEncounter,
+    setEncountersState
+  };
 }

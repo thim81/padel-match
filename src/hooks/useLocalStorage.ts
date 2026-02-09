@@ -25,8 +25,8 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       setStoredValue(valueToStore);
       window.dispatchEvent(
         new CustomEvent(LOCAL_STORAGE_EVENT, {
-          detail: { key, value: valueToStore },
-        }),
+          detail: { key, value: valueToStore }
+        })
       );
     },
     [key, initialValue]

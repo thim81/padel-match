@@ -63,6 +63,6 @@ export function parseSyncToken(syncToken: string): { teamName: string; teamSecre
 
   return {
     teamName: teamName.trim(),
-    teamSecret,
+    teamSecret
   };
 }

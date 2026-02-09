@@ -38,7 +38,7 @@ export function useTeamStore() {
     (nextPlayers: Player[]) => {
       setPlayers(nextPlayers);
     },
-    [setPlayers],
+    [setPlayers]
   );
 
   return { players, addPlayer, updatePlayer, removePlayer, setPlayersState };
