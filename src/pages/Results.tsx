@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, Home } from 'lucide-react';
+import { Trophy, CheckCircle2 } from 'lucide-react';
 import { useEncounterStore } from '@/hooks/useEncounterStore';
 import { useTeamStore } from '@/hooks/useTeamStore';
 import { calculateEncounterResult, formatMatchScore } from '@/lib/scoring';
@@ -125,15 +125,15 @@ export default function Results() {
         </div>
       </section>
 
-      {/* Close button — secondary style */}
+      {/* Close button */}
       <motion.button
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
         onClick={handleClose}
-        className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-secondary text-foreground font-semibold text-base active:scale-[0.98] transition-transform"
+        className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-base shadow-sm active:scale-[0.98] transition-transform"
       >
-        <Home className="w-5 h-5" />
+        <CheckCircle2 className="w-5 h-5" />
         Close Encounter
       </motion.button>
     </div>

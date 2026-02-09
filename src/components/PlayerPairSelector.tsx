@@ -48,7 +48,7 @@ export default function PlayerPairSelector({
       <div className="flex-1">
         <label className="text-[10px] uppercase text-muted-foreground font-medium tracking-wide">{label}</label>
         <Select
-          value={pair[position] || undefined}
+          value={pair[position] ?? ''}
           onValueChange={(value) => {
             const newPair: [string, string] = [...pair] as [string, string];
             newPair[position] = value;
