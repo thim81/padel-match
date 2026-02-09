@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Trophy, CheckCircle2 } from 'lucide-react';
 import { useEncounterStore } from '@/hooks/useEncounterStore';
 import { useTeamStore } from '@/hooks/useTeamStore';
-import { calculateEncounterResult, calculateSingleEncounterResult, formatMatchScore } from '@/lib/scoring';
+import { calculateEncounterResult, calculateSingleEncounterResult, formatMatchScore, getSetWinner } from '@/lib/scoring';
 import { Encounter, createEmptyMatch } from '@/types/encounter';
 
 export default function Results() {
@@ -168,22 +168,91 @@ export default function Results() {
 
               return (
                 <div key={matchEncounter.id} className="ios-card p-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">
-                      Round {matchEncounter.tournamentRound || 1}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(matchEncounter.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      at {matchEncounter.opponentName}
-                    </p>
-                    <p className="text-lg font-bold tabular-nums text-foreground">
-                      {matchResult ? `${matchResult.homeMatchesWon}–${matchResult.awayMatchesWon}` : '—'}
-                    </p>
-                  </div>
+                  {(() => {
+                    const sets = matchEncounter.singleMatch?.sets ?? [];
+                    const homePoints = matchResult?.homePointsWon ?? 0;
+                    const awayPoints = matchResult?.awayPointsWon ?? 0;
+
+                    return (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold uppercase text-muted-foreground">
+                            Round {matchEncounter.tournamentRound || 1}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(matchEncounter.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            at {matchEncounter.opponentName}
+                          </p>
+                          <p className="text-lg font-bold tabular-nums text-foreground">
+                            {matchResult ? `${matchResult.homeMatchesWon}–${matchResult.awayMatchesWon}` : '—'}
+                          </p>
+                        </div>
+
+                        {sets.length > 0 && (
+                          <div className="mt-3 rounded-lg border border-border/50 bg-secondary/20 px-3 py-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] font-semibold uppercase text-muted-foreground">
+                                Set Results
+                              </p>
+                              <p className="text-[10px] font-semibold uppercase text-muted-foreground tabular-nums">
+                                Pts {homePoints}–{awayPoints}
+                              </p>
+                            </div>
+
+                            <div className="mt-1 flex items-center justify-center gap-3 font-mono tabular-nums">
+                              {sets.map((set, si) => {
+                                const winner = getSetWinner(set, matchEncounter.format, matchEncounter.format === '2sets' && si === 2);
+                                const homeScoreClass = winner === 'home'
+                                  ? 'text-success font-bold'
+                                  : winner === 'away'
+                                    ? 'text-destructive'
+                                    : 'text-muted-foreground';
+                                return (
+                                  <div key={`home-set-${si}`} className={`text-lg leading-none ${homeScoreClass}`}>
+                                    {set.home}
+                                    {set.tiebreak && (
+                                      <sup className="ml-0.5 text-[10px] align-top">
+                                        {set.tiebreak.home}
+                                      </sup>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="mt-1 flex items-center justify-center gap-3 text-[10px] text-muted-foreground tabular-nums">
+                              {sets.map((_, si) => (
+                                <div key={`set-label-${si}`}>{si + 1}</div>
+                              ))}
+                            </div>
+                            <div className="mt-1 flex items-center justify-center gap-3 font-mono tabular-nums">
+                              {sets.map((set, si) => {
+                                const winner = getSetWinner(set, matchEncounter.format, matchEncounter.format === '2sets' && si === 2);
+                                const awayScoreClass = winner === 'away'
+                                  ? 'text-success font-bold'
+                                  : winner === 'home'
+                                    ? 'text-destructive'
+                                    : 'text-muted-foreground';
+                                return (
+                                  <div key={`away-set-${si}`} className={`text-lg leading-none ${awayScoreClass}`}>
+                                    {set.away}
+                                    {set.tiebreak && (
+                                      <sup className="ml-0.5 text-[10px] align-top">
+                                        {set.tiebreak.away}
+                                      </sup>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               );
             })}
