@@ -117,9 +117,16 @@ export default function RoundPage() {
           onClick={() => setShowAssignPlayers((prev) => !prev)}
           className="w-full flex items-center justify-between mb-2 px-1"
         >
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Assign Players
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Assign Players
+            </h2>
+            {!showAssignPlayers && pairsAssigned && (
+              <span className="text-[11px] text-success font-medium normal-case tracking-normal">
+                • All players assigned
+              </span>
+            )}
+          </div>
           <ChevronDown
             className={`w-4 h-4 text-muted-foreground transition-transform ${
               showAssignPlayers ? 'rotate-180' : ''
