@@ -19,6 +19,42 @@ import {
 
 function EncounterDetail({ encounter, players }: { encounter: Encounter; players: { id: string; name: string }[] }) {
   const getPlayerName = (id: string) => players.find(p => p.id === id)?.name || 'Unknown';
+  const isSingleMode = encounter.mode !== 'interclub' && encounter.singleMatch;
+
+  if (isSingleMode) {
+    const match = encounter.singleMatch;
+    return (
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: 'auto' }}
+        exit={{ opacity: 0, height: 0 }}
+        className="px-4 pb-4"
+      >
+        <div className="bg-secondary/40 rounded-xl p-3 border border-border/40">
+          <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Single Match</p>
+          <div className="flex items-center justify-between py-1">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                {match.homePair[0] && match.homePair[1]
+                  ? `${getPlayerName(match.homePair[0])} & ${getPlayerName(match.homePair[1])}`
+                  : 'TBD'}
+              </p>
+              {match.winner && (
+                <span className={`inline-block mt-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                  match.winner === 'home' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                }`}>
+                  {match.winner === 'home' ? 'W' : 'L'}
+                </span>
+              )}
+            </div>
+            <span className="text-sm font-mono text-muted-foreground ml-2">
+              {formatMatchScore(match, encounter.format)}
+            </span>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -187,6 +223,7 @@ export default function History() {
             {visibleEncounters.map(encounter => {
             const isExpanded = expandedId === encounter.id;
             const isWin = encounter.result?.winner === 'home';
+            const isSingleMode = encounter.mode !== 'interclub' && encounter.singleMatch;
             const encounterDate = new Date(encounter.date);
             const date = encounterDate.toLocaleDateString('en-US', {
               weekday: 'short',
@@ -210,11 +247,15 @@ export default function History() {
                         </p>
                       </div>
                       <p className="text-base font-semibold text-foreground mt-1 truncate">
-                        vs {encounter.opponentName}
+                        {encounter.mode === 'tournament' ? `at ${encounter.opponentName}` : `vs ${encounter.opponentName}`}
                       </p>
                       <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                         <CalendarDays className="w-3.5 h-3.5" />
-                        <span>{encounter.format === '2sets' ? '2 Sets' : '1 Set to 9'}</span>
+                        <span>
+                          {encounter.mode === 'tournament'
+                            ? `Tornooi${encounter.tournamentRound ? ` R${encounter.tournamentRound}` : ''}`
+                            : isSingleMode ? 'Single' : 'Interclub'} · {encounter.format === '2sets' ? '2 Sets' : '1 Set to 9'}
+                        </span>
                       </div>
                     </div>
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${isWin ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
@@ -222,8 +263,41 @@ export default function History() {
                     </span>
                   </div>
 
-                  <div className="mt-3 grid grid-cols-3 gap-1.5">
-                    {encounter.rounds.map(round => {
+                  <div className={`mt-3 grid gap-1.5 ${isSingleMode ? 'grid-cols-1' : 'grid-cols-3'}`}>
+                    {(isSingleMode ? [{ number: 1, matches: [encounter.singleMatch!] }] : encounter.rounds).map(round => {
+                      if (isSingleMode) {
+                        const match = round.matches[0];
+                        const tiebreak = getTiebreakSummary(match, encounter.format);
+                        return (
+                          <div
+                            key={`summary-single-${encounter.id}`}
+                            className={`rounded-lg border px-2 py-1.5 ${
+                              match.winner === 'home'
+                                ? 'border-success/40 bg-success/5'
+                                : match.winner === 'away'
+                                  ? 'border-destructive/40 bg-destructive/5'
+                                  : 'border-border/50 bg-secondary/20'
+                            }`}
+                          >
+                            <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              Match
+                            </p>
+                            <p className={`mt-1 font-mono text-[13px] leading-tight tabular-nums ${match.winner === 'home' ? 'text-success' : 'text-foreground'}`}>
+                              {getCompactMatchScore(match, encounter.format, 'home')}
+                            </p>
+                            <p className="mt-0.5 text-[9px] leading-none text-muted-foreground/80 tabular-nums">
+                              Home
+                            </p>
+                            <p className={`mt-0.5 font-mono text-[13px] leading-tight tabular-nums ${match.winner === 'away' ? 'text-success' : 'text-muted-foreground'}`}>
+                              {getCompactMatchScore(match, encounter.format, 'away')}
+                            </p>
+                            {tiebreak && (
+                              <p className="mt-0.5 text-[8px] leading-tight text-muted-foreground">{tiebreak}</p>
+                            )}
+                          </div>
+                        );
+                      }
+
                       const homeWins = round.matches.filter(m => m.winner === 'home').length;
                       const awayWins = round.matches.filter(m => m.winner === 'away').length;
                       const roundWin = homeWins > awayWins;

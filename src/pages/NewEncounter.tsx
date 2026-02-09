@@ -1,20 +1,45 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ChevronRight, Shield } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { MatchFormat, Encounter, createEmptyRound } from '@/types/encounter';
+import { EncounterMode, MatchFormat, Encounter, createEmptyRound, createEmptyMatch } from '@/types/encounter';
 import { useEncounterStore } from '@/hooks/useEncounterStore';
 import { useTeamStore } from '@/hooks/useTeamStore';
+import { useSyncSettings } from '@/hooks/useSyncSettings';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function NewEncounter() {
   const navigate = useNavigate();
   const { addEncounter } = useEncounterStore();
   const { players } = useTeamStore();
+  const { activeTeam } = useSyncSettings();
+  const isPersonalTeam = Boolean(activeTeam?.isDefault);
   const [opponentName, setOpponentName] = useState('');
+  const [mode, setMode] = useState<EncounterMode>(isPersonalTeam ? 'single' : 'interclub');
   const [format, setFormat] = useState<MatchFormat>('1set9');
 
-  const canStart = opponentName.trim() && players.length === 4;
+  const primaryMode: EncounterMode = isPersonalTeam ? 'single' : 'interclub';
+  const secondaryMode: EncounterMode = isPersonalTeam ? 'tournament' : 'single';
+  const isPersonalSingle = isPersonalTeam && mode === 'single';
+
+  useEffect(() => {
+    if (isPersonalTeam && mode === 'interclub') {
+      setMode('single');
+    }
+    if (!isPersonalTeam && mode === 'tournament') {
+      setMode('interclub');
+    }
+  }, [isPersonalTeam, mode]);
+
+  const minPlayers = mode === 'interclub' ? 4 : 2;
+  const canStart = opponentName.trim() && players.length >= minPlayers;
 
   const handleStart = () => {
     if (!canStart) return;
@@ -23,13 +48,17 @@ export default function NewEncounter() {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
       opponentName: opponentName.trim(),
+      mode,
+      tournamentId: mode === 'tournament' ? crypto.randomUUID() : undefined,
+      tournamentRound: mode === 'tournament' ? 1 : undefined,
       format,
-      rounds: [createEmptyRound(1), createEmptyRound(2), createEmptyRound(3)],
+      rounds: mode === 'interclub' ? [createEmptyRound(1), createEmptyRound(2), createEmptyRound(3)] : [],
+      singleMatch: mode !== 'interclub' ? createEmptyMatch('single-match') : undefined,
       status: 'in-progress',
     };
 
     addEncounter(encounter);
-    navigate(`/encounter/${encounter.id}/round/1`);
+    navigate(mode !== 'interclub' ? `/encounter/${encounter.id}/single` : `/encounter/${encounter.id}/round/1`);
   };
 
   return (
@@ -41,14 +70,14 @@ export default function NewEncounter() {
         <h1 className="text-2xl font-bold tracking-tight text-foreground">New Encounter</h1>
       </div>
 
-      {players.length < 4 && (
+      {players.length < minPlayers && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="bg-warning/10 border border-warning/20 rounded-xl p-4"
         >
           <p className="text-sm text-foreground">
-            You need 4 players in your team before starting. Go to{' '}
+            You need {minPlayers} players in your team before starting. Go to{' '}
             <button onClick={() => navigate('/settings')} className="text-primary font-medium">
               Settings
             </button>{' '}
@@ -57,21 +86,68 @@ export default function NewEncounter() {
         </motion.div>
       )}
 
+      <section>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+          Type
+        </h2>
+        <div className="relative flex bg-muted rounded-[10px] p-[3px]">
+          <motion.div
+            layout
+            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+            className="absolute top-[3px] bottom-[3px] rounded-[8px] bg-card shadow-sm"
+            style={{ width: 'calc(50% - 3px)', left: mode === primaryMode ? '3px' : 'calc(50%)' }}
+          />
+          <button
+            onClick={() => setMode(primaryMode)}
+            className="relative z-10 flex-1 py-2.5 text-center rounded-[8px] transition-colors"
+          >
+            <span className={`text-[13px] font-semibold ${mode === primaryMode ? 'text-foreground' : 'text-muted-foreground'}`}>
+              {isPersonalTeam ? 'Single Game' : 'Interclub'}
+            </span>
+          </button>
+          <button
+            onClick={() => setMode(secondaryMode)}
+            className="relative z-10 flex-1 py-2.5 text-center rounded-[8px] transition-colors"
+          >
+            <span className={`text-[13px] font-semibold ${mode === secondaryMode ? 'text-foreground' : 'text-muted-foreground'}`}>
+              {isPersonalTeam ? 'Tornooi' : 'Single Game'}
+            </span>
+          </button>
+        </div>
+      </section>
+
       {/* Opponent name */}
       <section>
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
-          Opponent Team
+          {isPersonalSingle ? 'Opponent Player' : mode === 'tournament' ? 'Host Club' : 'Opponent Team'}
         </h2>
         <div className="ios-grouped">
-          <div className="flex items-center gap-3 px-4 py-3">
-            <Shield className="w-5 h-5 text-muted-foreground/50 shrink-0" />
-            <Input
-              value={opponentName}
-              onChange={e => setOpponentName(e.target.value)}
-              placeholder="Enter team name"
-              className="flex-1 border-0 bg-transparent p-0 h-auto text-base rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
-            />
-          </div>
+          {isPersonalSingle ? (
+            <div className="px-4 py-3">
+              <Select value={opponentName || ''} onValueChange={setOpponentName}>
+                <SelectTrigger className="h-10 bg-card border-border/60 text-sm">
+                  <SelectValue placeholder="Select opponent player" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border z-50">
+                  {players.map((player) => (
+                    <SelectItem key={player.id} value={player.name}>
+                      {player.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 px-4 py-3">
+              <Shield className="w-5 h-5 text-muted-foreground/50 shrink-0" />
+              <Input
+                value={opponentName}
+                onChange={e => setOpponentName(e.target.value)}
+                placeholder={mode === 'tournament' ? 'Enter club name' : 'Enter team name'}
+                className="flex-1 border-0 bg-transparent p-0 h-auto text-base rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
+              />
+            </div>
+          )}
         </div>
       </section>
 
@@ -93,7 +169,7 @@ export default function NewEncounter() {
             className="relative z-10 flex-1 py-2.5 text-center rounded-[8px] transition-colors"
           >
             <span className={`text-[13px] font-semibold ${format === '1set9' ? 'text-foreground' : 'text-muted-foreground'}`}>
-              Interclub - 1 Set to 9
+              1 Set to 9
             </span>
           </button>
           <button
@@ -101,7 +177,7 @@ export default function NewEncounter() {
             className="relative z-10 flex-1 py-2.5 text-center rounded-[8px] transition-colors"
           >
             <span className={`text-[13px] font-semibold ${format === '2sets' ? 'text-foreground' : 'text-muted-foreground'}`}>
-              Interclub - 2 Sets
+              2 Sets
             </span>
           </button>
         </div>

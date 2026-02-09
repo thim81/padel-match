@@ -1,12 +1,13 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight } from 'lucide-react';
 import { useEncounterStore } from '@/hooks/useEncounterStore';
 import { useTeamStore } from '@/hooks/useTeamStore';
 import PlayerPairSelector from '@/components/PlayerPairSelector';
 import MatchScoreCard from '@/components/MatchScoreCard';
 import { isRoundComplete } from '@/lib/scoring';
 import { Match } from '@/types/encounter';
+import { useEffect, useState } from 'react';
 
 export default function RoundPage() {
   const { encounterId, roundNumber } = useParams<{ encounterId: string; roundNumber: string }>();
@@ -15,6 +16,14 @@ export default function RoundPage() {
   const { players } = useTeamStore();
 
   const encounter = getEncounter(encounterId || '');
+  useEffect(() => {
+    if (encounter && encounter.mode !== 'interclub') {
+      navigate(`/encounter/${encounter.id}/single`, { replace: true });
+    }
+  }, [encounter, navigate]);
+
+  if (encounter && encounter.mode !== 'interclub') return null;
+
   const roundIdx = parseInt(roundNumber || '1') - 1;
   const round = encounter?.rounds[roundIdx];
 
@@ -47,6 +56,15 @@ export default function RoundPage() {
   const roundComplete = isRoundComplete(round, encounter.format);
   const pairsAssigned = round.matches.every(m => m.homePair[0] && m.homePair[1]);
   const isLastRound = roundIdx === 2;
+  const [showAssignPlayers, setShowAssignPlayers] = useState(true);
+
+  useEffect(() => {
+    if (!pairsAssigned) {
+      setShowAssignPlayers(true);
+      return;
+    }
+    setShowAssignPlayers(false);
+  }, [pairsAssigned, roundIdx]);
 
   // Calculate running score
   let homeWins = 0;
@@ -94,16 +112,29 @@ export default function RoundPage() {
 
       {/* Player pairs */}
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
-          Assign Players
-        </h2>
-        <PlayerPairSelector
-          players={players}
-          match1Pair={round.matches[0].homePair}
-          match2Pair={round.matches[1].homePair}
-          onMatch1Change={pair => updatePair(0, pair)}
-          onMatch2Change={pair => updatePair(1, pair)}
-        />
+        <button
+          type="button"
+          onClick={() => setShowAssignPlayers((prev) => !prev)}
+          className="w-full flex items-center justify-between mb-2 px-1"
+        >
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Assign Players
+          </h2>
+          <ChevronDown
+            className={`w-4 h-4 text-muted-foreground transition-transform ${
+              showAssignPlayers ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+        {showAssignPlayers && (
+          <PlayerPairSelector
+            players={players}
+            match1Pair={round.matches[0].homePair}
+            match2Pair={round.matches[1].homePair}
+            onMatch1Change={pair => updatePair(0, pair)}
+            onMatch2Change={pair => updatePair(1, pair)}
+          />
+        )}
       </section>
 
       {/* Match scores */}

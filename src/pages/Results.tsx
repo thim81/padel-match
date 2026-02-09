@@ -3,12 +3,13 @@ import { motion } from 'framer-motion';
 import { Trophy, CheckCircle2 } from 'lucide-react';
 import { useEncounterStore } from '@/hooks/useEncounterStore';
 import { useTeamStore } from '@/hooks/useTeamStore';
-import { calculateEncounterResult, formatMatchScore } from '@/lib/scoring';
+import { calculateEncounterResult, calculateSingleEncounterResult, formatMatchScore } from '@/lib/scoring';
+import { Encounter, createEmptyMatch } from '@/types/encounter';
 
 export default function Results() {
   const { encounterId } = useParams<{ encounterId: string }>();
   const navigate = useNavigate();
-  const { getEncounter, updateEncounter } = useEncounterStore();
+  const { encounters, getEncounter, updateEncounter, addEncounter } = useEncounterStore();
   const { players } = useTeamStore();
 
   const encounter = getEncounter(encounterId || '');
@@ -21,12 +22,49 @@ export default function Results() {
     );
   }
 
-  const result = calculateEncounterResult(encounter.rounds, encounter.format);
+  const isSingleMode = encounter.mode !== 'interclub';
+  const result = isSingleMode && encounter.singleMatch
+    ? calculateSingleEncounterResult(encounter.singleMatch, encounter.format)
+    : calculateEncounterResult(encounter.rounds, encounter.format);
   const isWin = result.winner === 'home';
   const getPlayerName = (id: string) => players.find(p => p.id === id)?.name || '?';
+  const tournamentRunId = encounter.mode === 'tournament' ? (encounter.tournamentId || encounter.id) : '';
+  const tournamentMatches = encounter.mode === 'tournament'
+    ? encounters
+        .filter((item) => item.mode === 'tournament' && (item.tournamentId || item.id) === tournamentRunId)
+        .sort((a, b) => {
+          const roundDiff = (a.tournamentRound || 1) - (b.tournamentRound || 1);
+          if (roundDiff !== 0) return roundDiff;
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        })
+    : [];
 
   const handleClose = () => {
     updateEncounter(encounter.id, { status: 'completed', result });
+    navigate('/');
+  };
+
+  const handleNextTournamentRound = () => {
+    updateEncounter(encounter.id, { status: 'completed', result });
+    const nextMatch = createEmptyMatch('single-match');
+    if (encounter.singleMatch?.homePair[0] && encounter.singleMatch?.homePair[1]) {
+      nextMatch.homePair = [...encounter.singleMatch.homePair] as [string, string];
+    }
+
+    const nextEncounter: Encounter = {
+      id: crypto.randomUUID(),
+      date: new Date().toISOString(),
+      opponentName: encounter.opponentName,
+      mode: 'tournament',
+      tournamentId: encounter.tournamentId || encounter.id,
+      tournamentRound: (encounter.tournamentRound || 1) + 1,
+      format: encounter.format,
+      rounds: [],
+      singleMatch: nextMatch,
+      status: 'in-progress',
+    };
+
+    addEncounter(nextEncounter);
     navigate('/');
   };
 
@@ -52,7 +90,9 @@ export default function Results() {
         <h1 className="text-2xl font-bold text-foreground">
           {isWin ? 'Victory!' : 'Defeat'}
         </h1>
-        <p className="text-muted-foreground mt-1">vs {encounter.opponentName}</p>
+        <p className="text-muted-foreground mt-1">
+          {encounter.mode === 'tournament' ? `at ${encounter.opponentName}` : `vs ${encounter.opponentName}`}
+        </p>
 
         <div className="flex items-center justify-center gap-4 mt-4">
           <div className="text-center">
@@ -65,6 +105,37 @@ export default function Results() {
             <p className="text-xs text-muted-foreground">Away</p>
           </div>
         </div>
+
+        {encounter.mode === 'tournament' && (
+          <div className="mt-5 flex flex-col gap-2">
+            {isWin && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                onClick={handleNextTournamentRound}
+                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-base shadow-sm active:scale-[0.98] transition-transform"
+              >
+                Next Tournament Round
+              </motion.button>
+            )}
+
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: isWin ? 0.35 : 0.3 }}
+              onClick={handleClose}
+              className={`flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-base active:scale-[0.98] transition-transform ${
+                isWin
+                  ? 'bg-secondary text-foreground'
+                  : 'bg-primary text-primary-foreground shadow-sm'
+              }`}
+            >
+              <CheckCircle2 className="w-5 h-5" />
+              End Tornooi
+            </motion.button>
+          </div>
+        )}
       </motion.div>
 
       {/* Tiebreak details if needed */}
@@ -84,58 +155,122 @@ export default function Results() {
         </div>
       )}
 
-      {/* Round breakdown */}
-      <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
-          Round Breakdown
-        </h2>
-        <div className="flex flex-col gap-2">
-          {encounter.rounds.map(round => (
-            <div key={round.number} className="ios-card p-4">
-              <p className="text-xs font-semibold uppercase text-muted-foreground mb-3">Round {round.number}</p>
-              {round.matches.map((match, mi) => (
-                <div
-                  key={match.id}
-                  className={`flex items-center justify-between py-2.5 ${
-                    mi === 0 ? 'border-b border-border/50 pb-3 mb-2' : ''
-                  }`}
-                >
-                  <div className={`w-1 self-stretch rounded-full mr-3 ${
-                    match.winner === 'home' ? 'bg-success' : match.winner === 'away' ? 'bg-destructive' : 'bg-border'
-                  }`} />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">
-                      {getPlayerName(match.homePair[0])} & {getPlayerName(match.homePair[1])}
+      {encounter.mode === 'tournament' ? (
+        <section>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+            Tornooi Results
+          </h2>
+          <div className="flex flex-col gap-2">
+            {tournamentMatches.map((matchEncounter) => {
+              const matchResult = matchEncounter.id === encounter.id
+                ? result
+                : matchEncounter.result;
+
+              return (
+                <div key={matchEncounter.id} className="ios-card p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">
+                      Round {matchEncounter.tournamentRound || 1}
                     </p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                        match.winner === 'home' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
-                      }`}>
-                        {match.winner === 'home' ? 'W' : 'L'}
-                      </span>
-                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(matchEncounter.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                    </p>
                   </div>
-                  <span className="text-sm font-mono text-muted-foreground">
-                    {formatMatchScore(match, encounter.format)}
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      at {matchEncounter.opponentName}
+                    </p>
+                    <p className="text-lg font-bold tabular-nums text-foreground">
+                      {matchResult ? `${matchResult.homeMatchesWon}–${matchResult.awayMatchesWon}` : '—'}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : isSingleMode ? (
+        <section>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+            Match Summary
+          </h2>
+          {encounter.singleMatch && (
+            <div className="ios-card p-4">
+              <div className="flex items-center justify-between py-1">
+                <div className={`w-1 self-stretch rounded-full mr-3 ${
+                  encounter.singleMatch.winner === 'home' ? 'bg-success' : encounter.singleMatch.winner === 'away' ? 'bg-destructive' : 'bg-border'
+                }`} />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">
+                    {getPlayerName(encounter.singleMatch.homePair[0])} & {getPlayerName(encounter.singleMatch.homePair[1])}
+                  </p>
+                  <span className={`inline-block mt-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                    encounter.singleMatch.winner === 'home' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                  }`}>
+                    {encounter.singleMatch.winner === 'home' ? 'W' : 'L'}
                   </span>
                 </div>
-              ))}
+                <span className="text-sm font-mono text-muted-foreground">
+                  {formatMatchScore(encounter.singleMatch, encounter.format)}
+                </span>
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
+          )}
+        </section>
+      ) : (
+        <section>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+            Round Breakdown
+          </h2>
+          <div className="flex flex-col gap-2">
+            {encounter.rounds.map(round => (
+              <div key={round.number} className="ios-card p-4">
+                <p className="text-xs font-semibold uppercase text-muted-foreground mb-3">Round {round.number}</p>
+                {round.matches.map((match, mi) => (
+                  <div
+                    key={match.id}
+                    className={`flex items-center justify-between py-2.5 ${
+                      mi === 0 ? 'border-b border-border/50 pb-3 mb-2' : ''
+                    }`}
+                  >
+                    <div className={`w-1 self-stretch rounded-full mr-3 ${
+                      match.winner === 'home' ? 'bg-success' : match.winner === 'away' ? 'bg-destructive' : 'bg-border'
+                    }`} />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">
+                        {getPlayerName(match.homePair[0])} & {getPlayerName(match.homePair[1])}
+                      </p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                          match.winner === 'home' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                        }`}>
+                          {match.winner === 'home' ? 'W' : 'L'}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-sm font-mono text-muted-foreground">
+                      {formatMatchScore(match, encounter.format)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Close button */}
-      <motion.button
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        onClick={handleClose}
-        className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-base shadow-sm active:scale-[0.98] transition-transform"
-      >
-        <CheckCircle2 className="w-5 h-5" />
-        Close Encounter
-      </motion.button>
+      {encounter.mode !== 'tournament' && (
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          onClick={handleClose}
+          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-base shadow-sm active:scale-[0.98] transition-transform"
+        >
+          <CheckCircle2 className="w-5 h-5" />
+          Close Encounter
+        </motion.button>
+      )}
     </div>
   );
 }

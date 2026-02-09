@@ -1,4 +1,5 @@
 export type MatchFormat = '2sets' | '1set9';
+export type EncounterMode = 'interclub' | 'single' | 'tournament';
 
 export interface Player {
   id: string;
@@ -42,8 +43,12 @@ export interface Encounter {
   id: string;
   date: string;
   opponentName: string;
+  mode: EncounterMode;
+  tournamentId?: string;
+  tournamentRound?: number;
   format: MatchFormat;
   rounds: Round[];
+  singleMatch?: Match;
   status: 'in-progress' | 'completed';
   result?: EncounterResult;
 }

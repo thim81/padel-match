@@ -136,6 +136,42 @@ export function calculateEncounterResult(rounds: Round[], format: MatchFormat): 
   };
 }
 
+/** Calculate result summary for a single match encounter */
+export function calculateSingleEncounterResult(match: Match, format: MatchFormat): EncounterResult {
+  let homeMatchesWon = 0;
+  let awayMatchesWon = 0;
+  let homeGamesWon = 0;
+  let awayGamesWon = 0;
+  let homePointsWon = 0;
+  let awayPointsWon = 0;
+
+  const winner = getMatchWinner(match, format);
+  if (winner === 'home') homeMatchesWon = 1;
+  if (winner === 'away') awayMatchesWon = 1;
+
+  match.sets.forEach((set) => {
+    homeGamesWon += set.home;
+    awayGamesWon += set.away;
+    if (set.tiebreak) {
+      homePointsWon += set.tiebreak.home;
+      awayPointsWon += set.tiebreak.away;
+    }
+  });
+
+  const encounterWinner: 'home' | 'away' = winner
+    ?? (homeGamesWon >= awayGamesWon ? 'home' : 'away');
+
+  return {
+    homeMatchesWon,
+    awayMatchesWon,
+    homeGamesWon,
+    awayGamesWon,
+    homePointsWon,
+    awayPointsWon,
+    winner: encounterWinner,
+  };
+}
+
 /** Format a match score for display */
 export function formatMatchScore(match: Match, format: MatchFormat): string {
   if (match.sets.length === 0) return '—';

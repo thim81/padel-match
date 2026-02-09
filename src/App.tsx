@@ -10,6 +10,7 @@ import Settings from "./pages/Settings";
 import History from "./pages/History";
 import NewEncounter from "./pages/NewEncounter";
 import RoundPage from "./pages/RoundPage";
+import SingleMatchPage from "./pages/SingleMatchPage";
 import Results from "./pages/Results";
 import NotFound from "./pages/NotFound";
 import { useAppSync } from "./hooks/useAppSync";
@@ -67,6 +68,7 @@ const App = () => {
               <Route path="/history" element={<History />} />
               <Route path="/encounter/new" element={<NewEncounter />} />
               <Route path="/encounter/:encounterId/round/:roundNumber" element={<RoundPage />} />
+              <Route path="/encounter/:encounterId/single" element={<SingleMatchPage />} />
               <Route path="/encounter/:encounterId/results" element={<Results />} />
             </Route>
             <Route path="*" element={<NotFound />} />

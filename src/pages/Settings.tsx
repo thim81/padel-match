@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Minus, CheckCircle2, RefreshCw, Share2, MessageCircle, MessageSquare, Copy } from 'lucide-react';
+import { Plus, Minus, RefreshCw, Share2, MessageCircle, MessageSquare, Copy } from 'lucide-react';
 import { useTeamStore } from '@/hooks/useTeamStore';
 import { Input } from '@/components/ui/input';
 import PlayerAvatar from '@/components/PlayerAvatar';
@@ -16,6 +16,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function Settings() {
   const { players, addPlayer, updatePlayer, removePlayer } = useTeamStore();
@@ -23,6 +33,7 @@ export default function Settings() {
   const [newName, setNewName] = useState('');
   const [teamNameInput, setTeamNameInput] = useState(activeTeam?.teamName ?? '');
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [isRemoveTeamModalOpen, setIsRemoveTeamModalOpen] = useState(false);
 
   const handleAdd = () => {
     const trimmed = newName.trim();
@@ -32,7 +43,6 @@ export default function Settings() {
     }
   };
 
-  const teamComplete = players.length === 4;
   const hasTeamSpace = Boolean(activeTeam?.syncToken);
 
   useEffect(() => {
@@ -102,9 +112,13 @@ export default function Settings() {
 
   const handleRemoveActiveTeam = () => {
     if (!activeTeam) return;
-    const confirmed = window.confirm(`Remove team "${activeTeam.teamName}" from this device?`);
-    if (!confirmed) return;
+    setIsRemoveTeamModalOpen(true);
+  };
+
+  const handleConfirmRemoveActiveTeam = () => {
+    if (!activeTeam) return;
     removeTeam(activeTeam.id);
+    setIsRemoveTeamModalOpen(false);
   };
 
   return (
@@ -115,18 +129,8 @@ export default function Settings() {
       <section>
         <div className="flex items-center justify-between mb-2 px-1">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Your Team ({players.length}/4)
+            Your Team ({players.length})
           </h2>
-          {teamComplete && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center gap-1"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-              <span className="text-[11px] font-medium text-success">Ready</span>
-            </motion.div>
-          )}
         </div>
 
         <div className="ios-grouped">
@@ -165,29 +169,27 @@ export default function Settings() {
           )}
         </div>
 
-        {!teamComplete && (
-          <div className="ios-grouped mt-4">
-            <div className="flex items-center gap-3 px-4 py-3">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-success/10">
-                <Plus className="w-4 h-4 text-success" />
-              </div>
-              <Input
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAdd()}
-                placeholder="Add player name"
-                className="flex-1 border-0 bg-transparent p-0 h-auto text-base rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
-              />
-              <button
-                onClick={handleAdd}
-                disabled={!newName.trim()}
-                className="text-primary font-medium text-sm disabled:opacity-40"
-              >
-                Add
-              </button>
+        <div className="ios-grouped mt-4">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-success/10">
+              <Plus className="w-4 h-4 text-success" />
             </div>
+            <Input
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              placeholder="Add player name"
+              className="flex-1 border-0 bg-transparent p-0 h-auto text-base rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
+            />
+            <button
+              onClick={handleAdd}
+              disabled={!newName.trim()}
+              className="text-primary font-medium text-sm disabled:opacity-40"
+            >
+              Add
+            </button>
           </div>
-        )}
+        </div>
       </section>
 
       <section>
@@ -230,7 +232,8 @@ export default function Settings() {
                   </select>
                   <button
                     onClick={handleRemoveActiveTeam}
-                    className="h-10 px-3 rounded-lg bg-destructive/10 text-destructive text-sm font-medium"
+                    disabled={activeTeam?.isDefault}
+                    className="h-10 px-3 rounded-lg bg-destructive/10 text-destructive text-sm font-medium disabled:opacity-40"
                   >
                     Remove
                   </button>
@@ -238,6 +241,11 @@ export default function Settings() {
                 <p className="text-[11px] leading-tight text-success">
                   Active team: {activeTeam?.teamName}. Secret is stored securely and hidden.
                 </p>
+                {activeTeam?.isDefault && (
+                  <p className="text-[11px] leading-tight text-muted-foreground">
+                    Personal team is your local default and cannot be removed.
+                  </p>
+                )}
               </>
             )}
             <p className="mt-2 text-[11px] leading-tight text-muted-foreground">
@@ -338,6 +346,26 @@ export default function Settings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isRemoveTeamModalOpen} onOpenChange={setIsRemoveTeamModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Team?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes "{activeTeam?.teamName}" from this device. Your local team data stays on this team profile unless you delete it separately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmRemoveActiveTeam}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove Team
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

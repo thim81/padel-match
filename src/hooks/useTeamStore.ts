@@ -13,7 +13,6 @@ export function useTeamStore() {
   const addPlayer = useCallback(
     (name: string) => {
       setPlayers((prev) => {
-        if (prev.length >= 4) return prev;
         return [...prev, { id: crypto.randomUUID(), name }];
       });
     },

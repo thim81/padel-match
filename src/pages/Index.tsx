@@ -95,6 +95,10 @@ const Index = () => {
             <button
               key={enc.id}
               onClick={() => {
+                if (enc.mode !== 'interclub') {
+                  navigate(`/encounter/${enc.id}/single`);
+                  return;
+                }
                 const lastRound = enc.rounds.findIndex(r =>
                   r.matches.some(m => !m.winner)
                 );
@@ -107,9 +111,15 @@ const Index = () => {
                 <Play className="w-5 h-5 text-warning" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">vs {enc.opponentName}</p>
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {enc.mode === 'tournament' ? `at ${enc.opponentName}` : `vs ${enc.opponentName}`}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  {enc.format === '2sets' ? '2 Sets' : '1 Set to 9'}
+                  {enc.mode === 'single' || enc.mode === 'tournament'
+                    ? `${enc.mode === 'tournament'
+                        ? `Tornooi${enc.tournamentRound ? ` R${enc.tournamentRound}` : ''}`
+                        : 'Single'} · ${enc.format === '2sets' ? '2 Sets' : '1 Set to 9'}`
+                    : enc.format === '2sets' ? 'Interclub · 2 Sets' : 'Interclub · 1 Set to 9'}
                 </p>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground/50" />
