@@ -1,8 +1,9 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Clock, Settings } from 'lucide-react';
+import { Home, Clock, Settings, PlusCircle } from 'lucide-react';
 
 const tabs = [
   { path: '/', icon: Home, label: 'Home' },
+  { path: '/encounter/new', icon: PlusCircle, label: 'New Match' },
   { path: '/history', icon: Clock, label: 'History' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];

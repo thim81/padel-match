@@ -12,7 +12,7 @@ export default function NewEncounter() {
   const { addEncounter } = useEncounterStore();
   const { players } = useTeamStore();
   const [opponentName, setOpponentName] = useState('');
-  const [format, setFormat] = useState<MatchFormat>('2sets');
+  const [format, setFormat] = useState<MatchFormat>('1set9');
 
   const canStart = opponentName.trim() && players.length === 4;
 
@@ -86,22 +86,22 @@ export default function NewEncounter() {
             layout
             transition={{ type: 'spring', stiffness: 500, damping: 35 }}
             className="absolute top-[3px] bottom-[3px] rounded-[8px] bg-card shadow-sm"
-            style={{ width: 'calc(50% - 3px)', left: format === '2sets' ? '3px' : 'calc(50%)' }}
+            style={{ width: 'calc(50% - 3px)', left: format === '1set9' ? '3px' : 'calc(50%)' }}
           />
-          <button
-            onClick={() => setFormat('2sets')}
-            className="relative z-10 flex-1 py-2.5 text-center rounded-[8px] transition-colors"
-          >
-            <span className={`text-[13px] font-semibold ${format === '2sets' ? 'text-foreground' : 'text-muted-foreground'}`}>
-              2 Sets
-            </span>
-          </button>
           <button
             onClick={() => setFormat('1set9')}
             className="relative z-10 flex-1 py-2.5 text-center rounded-[8px] transition-colors"
           >
             <span className={`text-[13px] font-semibold ${format === '1set9' ? 'text-foreground' : 'text-muted-foreground'}`}>
-              1 Set to 9
+              Interclub - 1 Set to 9
+            </span>
+          </button>
+          <button
+            onClick={() => setFormat('2sets')}
+            className="relative z-10 flex-1 py-2.5 text-center rounded-[8px] transition-colors"
+          >
+            <span className={`text-[13px] font-semibold ${format === '2sets' ? 'text-foreground' : 'text-muted-foreground'}`}>
+              Interclub - 2 Sets
             </span>
           </button>
         </div>
