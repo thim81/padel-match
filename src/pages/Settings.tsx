@@ -49,7 +49,6 @@ export default function Settings() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className={i < players.length - 1 ? 'ios-separator' : ''}
               >
                 <div className="flex items-center gap-3 px-4 py-3">
                   <PlayerAvatar name={player.name || 'P'} />
@@ -66,6 +65,7 @@ export default function Settings() {
                     <Minus className="w-3.5 h-3.5 text-destructive" />
                   </button>
                 </div>
+                {i < players.length - 1 && <div className="ios-separator" />}
               </motion.div>
             ))}
           </AnimatePresence>
