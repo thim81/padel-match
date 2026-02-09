@@ -20,6 +20,7 @@ export interface SetScore {
 export interface Match {
   id: string;
   homePair: [string, string]; // player IDs
+  awayPair?: [string, string]; // used for single-mode pair vs pair
   sets: SetScore[];
   winner?: 'home' | 'away';
 }
@@ -57,6 +58,7 @@ export function createEmptyMatch(id: string): Match {
   return {
     id,
     homePair: ['', ''],
+    awayPair: ['', ''],
     sets: [{ home: 0, away: 0 }]
   };
 }

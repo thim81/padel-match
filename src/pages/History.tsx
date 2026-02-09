@@ -36,7 +36,11 @@ function EncounterDetail({ encounter, players }: { encounter: Encounter; players
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">
                 {match.homePair[0] && match.homePair[1]
-                  ? `${getPlayerName(match.homePair[0])} & ${getPlayerName(match.homePair[1])}`
+                  ? `${getPlayerName(match.homePair[0])} & ${getPlayerName(match.homePair[1])}${
+                      encounter.mode === 'single' && match.awayPair?.[0] && match.awayPair?.[1]
+                        ? ` vs ${getPlayerName(match.awayPair[0])} & ${getPlayerName(match.awayPair[1])}`
+                        : ''
+                    }`
                   : 'TBD'}
               </p>
               {match.winner && (

@@ -8,6 +8,7 @@ interface MatchScoreCardProps {
   matchIndex: number;
   format: MatchFormat;
   homePlayerNames: [string, string];
+  awayPlayerNames?: [string, string];
   onChange: (match: Match) => void;
 }
 
@@ -35,7 +36,14 @@ function ScoreStepper({ value, onChange, min = 0, max = 13 }: {
   );
 }
 
-export default function MatchScoreCard({ match, matchIndex, format, homePlayerNames, onChange }: MatchScoreCardProps) {
+export default function MatchScoreCard({
+  match,
+  matchIndex,
+  format,
+  homePlayerNames,
+  awayPlayerNames,
+  onChange,
+}: MatchScoreCardProps) {
   const winner = getMatchWinner(match, format);
 
   const safeMatch = match.sets.length === 0
@@ -107,7 +115,9 @@ export default function MatchScoreCard({ match, matchIndex, format, homePlayerNa
       </div>
 
       <p className="text-xs text-muted-foreground mb-4">
-        {homePlayerNames[0] || '?'} & {homePlayerNames[1] || '?'} vs Opponent
+        {homePlayerNames[0] || '?'} & {homePlayerNames[1] || '?'} vs {awayPlayerNames
+          ? `${awayPlayerNames[0] || '?'} & ${awayPlayerNames[1] || '?'}`
+          : 'Opponent'}
       </p>
 
       {winner && (

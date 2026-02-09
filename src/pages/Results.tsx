@@ -272,6 +272,11 @@ export default function Results() {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">
                     {getPlayerName(encounter.singleMatch.homePair[0])} & {getPlayerName(encounter.singleMatch.homePair[1])}
+                    {encounter.mode === 'single' &&
+                    encounter.singleMatch.awayPair?.[0] &&
+                    encounter.singleMatch.awayPair?.[1]
+                      ? ` vs ${getPlayerName(encounter.singleMatch.awayPair[0])} & ${getPlayerName(encounter.singleMatch.awayPair[1])}`
+                      : ''}
                   </p>
                   <span className={`inline-block mt-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded ${
                     encounter.singleMatch.winner === 'home' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'

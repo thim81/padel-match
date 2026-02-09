@@ -32,6 +32,8 @@ export default function SingleMatchPage() {
   }
 
   const match = encounter.singleMatch;
+  const isSingleMode = encounter.mode === 'single';
+  const awayPair = match.awayPair ?? ['', ''];
 
   const updatePair = (position: 0 | 1, playerId: string) => {
     const nextPair: [string, string] = [...match.homePair] as [string, string];
@@ -40,15 +42,41 @@ export default function SingleMatchPage() {
     updateEncounter(encounter.id, { singleMatch: nextMatch });
   };
 
+  const updateAwayPair = (position: 0 | 1, playerId: string) => {
+    const nextPair: [string, string] = [...awayPair] as [string, string];
+    nextPair[position] = playerId;
+    const nextMatch: Match = { ...match, awayPair: nextPair };
+    updateEncounter(encounter.id, { singleMatch: nextMatch });
+  };
+
   const updateMatch = (nextMatch: Match) => {
     updateEncounter(encounter.id, { singleMatch: nextMatch });
   };
 
+  const getAvailablePlayers = (target: 'home' | 'away', position: 0 | 1) => {
+    const currentPair = target === 'home' ? match.homePair : awayPair;
+    const otherPair = target === 'home' ? awayPair : match.homePair;
+    const selectedCurrent = currentPair[position];
+    const selectedSibling = currentPair[position === 0 ? 1 : 0];
+
+    return players.filter((player) => {
+      if (player.id === selectedCurrent) return true;
+      if (player.id === selectedSibling) return false;
+      if (otherPair.includes(player.id)) return false;
+      return true;
+    });
+  };
+
   const selectedA = match.homePair[0];
   const selectedB = match.homePair[1];
-  const availableA = players.filter((player) => player.id !== selectedB || player.id === selectedA);
-  const availableB = players.filter((player) => player.id !== selectedA || player.id === selectedB);
+  const selectedC = awayPair[0];
+  const selectedD = awayPair[1];
+  const availableA = getAvailablePlayers('home', 0);
+  const availableB = getAvailablePlayers('home', 1);
+  const availableC = getAvailablePlayers('away', 0);
+  const availableD = getAvailablePlayers('away', 1);
   const playersAssigned = Boolean(selectedA && selectedB);
+  const awayPairAssigned = Boolean(selectedC && selectedD);
   const matchComplete = playersAssigned && isMatchComplete(match, encounter.format);
   const isTournamentPairLocked =
     encounter.mode === 'tournament' &&
@@ -60,6 +88,33 @@ export default function SingleMatchPage() {
   const matchScoreAway = match.winner === 'away' ? 1 : 0;
   const result = calculateSingleEncounterResult(match, encounter.format);
   const isTournamentWin = encounter.mode === 'tournament' && result.winner === 'home';
+
+  const renderPlayerSelect = (
+    label: string,
+    value: string,
+    onChange: (value: string) => void,
+    availablePlayers: typeof players,
+    disabled = false
+  ) => (
+    <div>
+      <label className="text-[10px] uppercase text-muted-foreground font-medium tracking-wide">{label}</label>
+      <Select value={value || ''} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger className="mt-1 bg-card border-border/50 h-10 rounded-lg text-sm">
+          <SelectValue placeholder="Select..." />
+        </SelectTrigger>
+        <SelectContent className="bg-popover border-border z-50">
+          {availablePlayers.map((player) => (
+            <SelectItem key={player.id} value={player.id}>
+              <div className="flex items-center gap-2">
+                <PlayerAvatar name={player.name} size="sm" />
+                <span>{player.name}</span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 
   const handleCloseEncounter = () => {
     updateEncounter(encounter.id, { status: 'completed', result });
@@ -115,56 +170,30 @@ export default function SingleMatchPage() {
 
       <section>
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
-          Assign Pair
+          {isSingleMode ? 'Assign Pairs' : 'Assign Pair'}
         </h2>
         <div className="ios-card p-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[10px] uppercase text-muted-foreground font-medium tracking-wide">Player A</label>
-              <Select
-                value={selectedA || ''}
-                onValueChange={(value) => updatePair(0, value)}
-                disabled={isTournamentPairLocked}
-              >
-                <SelectTrigger className="mt-1 bg-card border-border/50 h-10 rounded-lg text-sm">
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border z-50">
-                  {availableA.map((player) => (
-                    <SelectItem key={player.id} value={player.id}>
-                      <div className="flex items-center gap-2">
-                        <PlayerAvatar name={player.name} size="sm" />
-                        <span>{player.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {isSingleMode ? (
+            <>
+              <p className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide mb-2">Pair A</p>
+              <div className="grid grid-cols-2 gap-3">
+                {renderPlayerSelect('Player A', selectedA, (value) => updatePair(0, value), availableA)}
+                {renderPlayerSelect('Player B', selectedB, (value) => updatePair(1, value), availableB)}
+              </div>
+              <div className="my-3 border-t border-border/50" />
+              <p className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wide mb-2">Pair B</p>
+              <p className="text-[11px] text-muted-foreground mb-2">Optional opponent pair</p>
+              <div className="grid grid-cols-2 gap-3">
+                {renderPlayerSelect('Player C', selectedC, (value) => updateAwayPair(0, value), availableC)}
+                {renderPlayerSelect('Player D', selectedD, (value) => updateAwayPair(1, value), availableD)}
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {renderPlayerSelect('Player A', selectedA, (value) => updatePair(0, value), availableA, isTournamentPairLocked)}
+              {renderPlayerSelect('Player B', selectedB, (value) => updatePair(1, value), availableB, isTournamentPairLocked)}
             </div>
-
-            <div>
-              <label className="text-[10px] uppercase text-muted-foreground font-medium tracking-wide">Player B</label>
-              <Select
-                value={selectedB || ''}
-                onValueChange={(value) => updatePair(1, value)}
-                disabled={isTournamentPairLocked}
-              >
-                <SelectTrigger className="mt-1 bg-card border-border/50 h-10 rounded-lg text-sm">
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border z-50">
-                  {availableB.map((player) => (
-                    <SelectItem key={player.id} value={player.id}>
-                      <div className="flex items-center gap-2">
-                        <PlayerAvatar name={player.name} size="sm" />
-                        <span>{player.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          )}
         </div>
         {isTournamentPairLocked && (
           <p className="text-[11px] text-muted-foreground mt-2">
@@ -183,6 +212,7 @@ export default function SingleMatchPage() {
             matchIndex={0}
             format={encounter.format}
             homePlayerNames={[getPlayerName(selectedA), getPlayerName(selectedB)]}
+            awayPlayerNames={isSingleMode && awayPairAssigned ? [getPlayerName(selectedC), getPlayerName(selectedD)] : undefined}
             onChange={updateMatch}
           />
         </motion.section>
@@ -220,6 +250,24 @@ export default function SingleMatchPage() {
             className="text-xs font-medium text-primary self-center mt-1"
           >
             View Tornooi Results
+          </button>
+        </div>
+      ) : encounter.mode === 'single' && matchComplete ? (
+        <div className="mt-2 flex flex-col gap-2">
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={handleCloseEncounter}
+            className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-base shadow-sm active:scale-[0.98] transition-transform"
+          >
+            <CheckCircle2 className="w-5 h-5" />
+            Close Encounter
+          </motion.button>
+          <button
+            onClick={() => navigate(`/encounter/${encounter.id}/results`)}
+            className="text-xs font-medium text-primary self-center mt-1"
+          >
+            View Results
           </button>
         </div>
       ) : (

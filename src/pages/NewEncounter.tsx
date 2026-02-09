@@ -28,6 +28,7 @@ export default function NewEncounter() {
   const primaryMode: EncounterMode = isPersonalTeam ? 'single' : 'interclub';
   const secondaryMode: EncounterMode = isPersonalTeam ? 'tournament' : 'single';
   const isPersonalSingle = isPersonalTeam && mode === 'single';
+  const requiresOpponentName = !(mode === 'single' && isPersonalTeam);
 
   useEffect(() => {
     if (isPersonalTeam && mode === 'interclub') {
@@ -39,7 +40,7 @@ export default function NewEncounter() {
   }, [isPersonalTeam, mode]);
 
   const minPlayers = mode === 'interclub' ? 4 : 2;
-  const canStart = opponentName.trim() && players.length >= minPlayers;
+  const canStart = players.length >= minPlayers && (!requiresOpponentName || Boolean(opponentName.trim()));
 
   const handleStart = () => {
     if (!canStart) return;
@@ -47,7 +48,7 @@ export default function NewEncounter() {
     const encounter: Encounter = {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
-      opponentName: opponentName.trim(),
+      opponentName: requiresOpponentName ? opponentName.trim() : 'Internal Match',
       mode,
       tournamentId: mode === 'tournament' ? crypto.randomUUID() : undefined,
       tournamentRound: mode === 'tournament' ? 1 : undefined,
@@ -123,19 +124,8 @@ export default function NewEncounter() {
         </h2>
         <div className="ios-grouped">
           {isPersonalSingle ? (
-            <div className="px-4 py-3">
-              <Select value={opponentName || ''} onValueChange={setOpponentName}>
-                <SelectTrigger className="h-10 bg-card border-border/60 text-sm">
-                  <SelectValue placeholder="Select opponent player" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border z-50">
-                  {players.map((player) => (
-                    <SelectItem key={player.id} value={player.name}>
-                      {player.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="px-4 py-3 text-sm text-muted-foreground">
+              Single game uses your pair. Opponent pair can be added later if known.
             </div>
           ) : (
             <div className="flex items-center gap-3 px-4 py-3">
