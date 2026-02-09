@@ -69,7 +69,7 @@ export default function NewEncounter() {
               value={opponentName}
               onChange={e => setOpponentName(e.target.value)}
               placeholder="Enter team name"
-              className="flex-1 border-0 bg-transparent p-0 h-auto text-base focus-visible:ring-0 shadow-none"
+              className="flex-1 border-0 bg-transparent p-0 h-auto text-base rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
             />
           </div>
         </div>
