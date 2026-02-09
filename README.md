@@ -60,6 +60,19 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Cloud Sync (Cloudflare Pages)
+
+This project includes a Pages Function route at `/api/state` in:
+
+- `functions/api/state.ts`
+
+Required Cloudflare Pages bindings/vars:
+
+- KV binding: `PADEL_MATCHES_KV`
+- Environment variable/secret: `AUTH_TOKEN`
+
+Use the same value in the app Settings `Cloud Sync` key field and `AUTH_TOKEN` to authorize sync requests.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
