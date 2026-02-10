@@ -179,17 +179,14 @@ export default function NewEncounter() {
       </section>
 
       {/* Start button */}
-      <motion.button
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+      <button
         onClick={handleStart}
         disabled={!canStart}
         className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-base disabled:opacity-40 active:scale-[0.98] transition-transform"
       >
         Start Encounter
         <ChevronRight className="w-5 h-5" />
-      </motion.button>
+      </button>
     </div>
   );
 }
