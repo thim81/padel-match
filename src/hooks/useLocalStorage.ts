@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 const LOCAL_STORAGE_EVENT = 'local-storage';
 
@@ -12,13 +12,20 @@ function readLocalStorageValue<T>(key: string, fallback: T): T {
 }
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
-  const [storedValue, setStoredValue] = useState<T>(() => readLocalStorageValue(key, initialValue));
+  const initialValueRef = useRef(initialValue);
+  useEffect(() => {
+    initialValueRef.current = initialValue;
+  }, [initialValue]);
+
+  const [storedValue, setStoredValue] = useState<T>(() =>
+    readLocalStorageValue(key, initialValueRef.current)
+  );
 
   const setValue = useCallback(
     (value: T | ((val: T) => T)) => {
       // Read current value directly from localStorage (source of truth)
       // to avoid React 18 batching issues where setState updater runs deferred
-      const current = readLocalStorageValue(key, initialValue);
+      const current = readLocalStorageValue(key, initialValueRef.current);
 
       const valueToStore = value instanceof Function ? value(current) : value;
       window.localStorage.setItem(key, JSON.stringify(valueToStore));
@@ -29,18 +36,18 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
         })
       );
     },
-    [key, initialValue]
+    [key]
   );
 
   useEffect(() => {
     // Keep state in sync when a different storage key is selected dynamically.
-    setStoredValue(readLocalStorageValue(key, initialValue));
-  }, [initialValue, key]);
+    setStoredValue(readLocalStorageValue(key, initialValueRef.current));
+  }, [key]);
 
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
       if (event.key !== key) return;
-      setStoredValue(readLocalStorageValue(key, initialValue));
+      setStoredValue(readLocalStorageValue(key, initialValueRef.current));
     };
 
     const handleLocalStorageEvent = (event: Event) => {
@@ -56,7 +63,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener(LOCAL_STORAGE_EVENT, handleLocalStorageEvent);
     };
-  }, [initialValue, key]);
+  }, [key]);
 
   return [storedValue, setValue] as const;
 }
