@@ -40,17 +40,21 @@ export function useAppSync(
   }, [players, encounters, settings]);
 
   const syncNow = useCallback(
-    async (showSuccessToast = false) => {
+    async (options?: { showSuccessToast?: boolean; toastOnRemoteChanges?: boolean }) => {
       if (!syncToken) return;
+      const showSuccessToast = Boolean(options?.showSuccessToast);
+      const toastOnRemoteChanges = Boolean(options?.toastOnRemoteChanges);
 
       const remoteState = await fetchRemoteState(syncToken);
       if (remoteState) {
         const normalizedRemote = normalizeRemoteState(remoteState);
         const remoteStateStr = JSON.stringify(normalizedRemote);
         const currentStateStr = JSON.stringify(getLocalState());
+        const hasRemoteChanges = remoteStateStr !== currentStateStr;
 
-        if (remoteStateStr !== currentStateStr) {
+        if (hasRemoteChanges) {
           onSyncState(normalizedRemote);
+          if (toastOnRemoteChanges) toast.success('Synced latest updates');
         }
         lastSyncedState.current = remoteStateStr;
         if (showSuccessToast) toast.success('Synced successfully');
@@ -78,7 +82,7 @@ export function useAppSync(
     if (initializedToken.current === syncToken) return;
 
     initializedToken.current = syncToken;
-    syncNow(true);
+    syncNow({ showSuccessToast: true });
   }, [syncToken, syncNow]);
 
   useEffect(() => {
@@ -104,11 +108,11 @@ export function useAppSync(
 
     const handleResume = () => {
       if (document.hidden) return;
-      syncNow();
+      syncNow({ toastOnRemoteChanges: true });
     };
 
     const handlePageShow = () => {
-      syncNow();
+      syncNow({ toastOnRemoteChanges: true });
     };
 
     document.addEventListener('visibilitychange', handleResume);
