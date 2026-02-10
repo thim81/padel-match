@@ -30,6 +30,7 @@ export function useAppSync(
 ) {
   const lastSyncedState = useRef('');
   const initializedToken = useRef<string | null>(null);
+  const syncInFlight = useRef(false);
 
   const getLocalState = useCallback((): SyncState => {
     return {
@@ -42,31 +43,37 @@ export function useAppSync(
   const syncNow = useCallback(
     async (options?: { showSuccessToast?: boolean; toastOnRemoteChanges?: boolean }) => {
       if (!syncToken) return;
+      if (syncInFlight.current) return;
+      syncInFlight.current = true;
       const showSuccessToast = Boolean(options?.showSuccessToast);
       const toastOnRemoteChanges = Boolean(options?.toastOnRemoteChanges);
 
-      const remoteState = await fetchRemoteState(syncToken);
-      if (remoteState) {
-        const normalizedRemote = normalizeRemoteState(remoteState);
-        const remoteStateStr = JSON.stringify(normalizedRemote);
-        const currentStateStr = JSON.stringify(getLocalState());
-        const hasRemoteChanges = remoteStateStr !== currentStateStr;
+      try {
+        const remoteState = await fetchRemoteState(syncToken);
+        if (remoteState) {
+          const normalizedRemote = normalizeRemoteState(remoteState);
+          const remoteStateStr = JSON.stringify(normalizedRemote);
+          const currentStateStr = JSON.stringify(getLocalState());
+          const hasRemoteChanges = remoteStateStr !== currentStateStr;
 
-        if (hasRemoteChanges) {
-          onSyncState(normalizedRemote);
-          if (toastOnRemoteChanges) toast.success('Synced latest updates');
+          if (hasRemoteChanges) {
+            onSyncState(normalizedRemote);
+            if (toastOnRemoteChanges) toast.success('Synced latest updates');
+          }
+          lastSyncedState.current = remoteStateStr;
+          if (showSuccessToast) toast.success('Synced successfully');
+          return;
         }
-        lastSyncedState.current = remoteStateStr;
-        if (showSuccessToast) toast.success('Synced successfully');
-        return;
-      }
 
-      const currentState = getLocalState();
-      const currentStateStr = JSON.stringify(currentState);
-      const success = await pushLocalState(syncToken, currentState);
-      if (success) {
-        lastSyncedState.current = currentStateStr;
-        if (showSuccessToast) toast.success('Synced successfully');
+        const currentState = getLocalState();
+        const currentStateStr = JSON.stringify(currentState);
+        const success = await pushLocalState(syncToken, currentState);
+        if (success) {
+          lastSyncedState.current = currentStateStr;
+          if (showSuccessToast) toast.success('Synced successfully');
+        }
+      } finally {
+        syncInFlight.current = false;
       }
     },
     [syncToken, getLocalState, onSyncState]

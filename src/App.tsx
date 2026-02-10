@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import Settings from "./pages/Settings";
@@ -39,20 +39,25 @@ const App = () => {
   }, [importTeamFromToken]);
 
   const effectiveSyncToken = syncEnabled ? syncToken : '';
+  const syncSettingsPayload = useMemo(
+    () => ({
+      teamName: activeTeam?.teamName ?? "",
+      teamSecret: activeTeam?.teamSecret ?? "",
+      syncToken: effectiveSyncToken,
+    }),
+    [activeTeam?.teamName, activeTeam?.teamSecret, effectiveSyncToken]
+  );
+  const handleSyncState = useCallback((state: { players: typeof players; encounters: typeof encounters }) => {
+    setPlayersState(state.players);
+    setEncountersState(state.encounters);
+  }, [setPlayersState, setEncountersState]);
 
   useAppSync(
     effectiveSyncToken,
     players,
     encounters,
-    {
-      teamName: activeTeam?.teamName ?? "",
-      teamSecret: activeTeam?.teamSecret ?? "",
-      syncToken: effectiveSyncToken,
-    },
-    (state) => {
-    setPlayersState(state.players);
-    setEncountersState(state.encounters);
-    },
+    syncSettingsPayload,
+    handleSyncState,
   );
 
   return (
