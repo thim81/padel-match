@@ -9,6 +9,7 @@ export interface TeamSpace {
   teamName: string;
   teamSecret: string;
   syncToken: string;
+  syncEnabled?: boolean;
   createdAt: string;
   isDefault?: boolean;
 }
@@ -32,6 +33,7 @@ function createDefaultTeamSpace(): TeamSpace {
     teamName: 'Personal',
     teamSecret: '',
     syncToken: '',
+    syncEnabled: false,
     createdAt: new Date().toISOString(),
     isDefault: true
   };
@@ -47,6 +49,7 @@ function makeTeamSpace(teamName: string, teamSecret: string): TeamSpace {
     teamName: normalizedName,
     teamSecret: normalizedSecret,
     syncToken,
+    syncEnabled: false,
     createdAt: new Date().toISOString(),
     isDefault: false
   };
@@ -57,7 +60,7 @@ function ensureDefaultTeam(teams: TeamSpace[]): TeamSpace[] {
   const nonDefault = teams.filter((team) => team.id !== DEFAULT_TEAM_ID && !team.isDefault);
 
   const defaultTeam = existingDefault
-    ? { ...existingDefault, id: DEFAULT_TEAM_ID, teamName: existingDefault.teamName || 'Personal', teamSecret: '', syncToken: '', isDefault: true }
+    ? { ...existingDefault, id: DEFAULT_TEAM_ID, teamName: existingDefault.teamName || 'Personal', isDefault: true }
     : createDefaultTeamSpace();
 
   return [defaultTeam, ...nonDefault];
@@ -83,13 +86,15 @@ function normalizeSyncSettings(raw: unknown): SyncSettings {
         const parsed = parseSyncToken(team.syncToken);
         const isDefault = team.id === DEFAULT_TEAM_ID || team.isDefault;
         const normalizedName = isDefault ? team.teamName || 'Personal' : parsed?.teamName || team.teamName || 'Team';
-        const normalizedSecret = isDefault ? '' : parsed?.teamSecret || team.teamSecret || '';
+        const normalizedSecret = parsed?.teamSecret || team.teamSecret || '';
+        const hasSyncSpace = Boolean(normalizedSecret);
         return {
           ...team,
           id: isDefault ? DEFAULT_TEAM_ID : team.id || team.syncToken,
           teamName: normalizedName,
-          teamSecret: normalizedSecret,
-          syncToken: isDefault ? '' : createSyncToken(normalizedName, normalizedSecret || parsed?.teamSecret || ''),
+          teamSecret: hasSyncSpace ? normalizedSecret : '',
+          syncToken: hasSyncSpace ? createSyncToken(normalizedName, normalizedSecret) : '',
+          syncEnabled: hasSyncSpace ? Boolean(team.syncEnabled) : false,
           createdAt: team.createdAt || new Date().toISOString(),
           isDefault
         };
@@ -101,10 +106,16 @@ function normalizeSyncSettings(raw: unknown): SyncSettings {
     const activeTeamId = withDefault.some((team) => team.id === candidate.activeTeamId)
       ? (candidate.activeTeamId as string)
       : (withDefault[0]?.id ?? null);
-    const syncEnabled =
-      typeof candidate.syncEnabled === 'boolean' ? candidate.syncEnabled : false;
+    // Migrate legacy global syncEnabled onto the active team only.
+    const migratedTeams = withDefault.map((team) => ({
+      ...team,
+      syncEnabled:
+        typeof team.syncEnabled === 'boolean'
+          ? team.syncEnabled
+          : (typeof candidate.syncEnabled === 'boolean' && team.id === activeTeamId ? candidate.syncEnabled : false)
+    }));
 
-    return { teams: withDefault, activeTeamId, syncEnabled };
+    return { teams: migratedTeams, activeTeamId, syncEnabled: false };
   }
 
   // Legacy format migration: { teamName, teamSecret, syncToken }.
@@ -166,16 +177,20 @@ export function useSyncSettings() {
     (teamName: string) => {
       const trimmed = teamName.trim();
       if (!trimmed || !activeTeam) return;
-
-      const updated = makeTeamSpace(trimmed, activeTeam.teamSecret);
       setStoredSettings((prevRaw) => {
         const prev = normalizeSyncSettings(prevRaw);
-        const teams = prev.teams.map((team) =>
-          team.id === activeTeam.id ? { ...updated, createdAt: team.createdAt } : team
-        );
+        const teams = prev.teams.map((team) => {
+          if (team.id !== activeTeam.id) return team;
+          const hasSecret = Boolean(team.teamSecret);
+          return {
+            ...team,
+            teamName: trimmed,
+            syncToken: hasSecret ? createSyncToken(trimmed, team.teamSecret) : '',
+          };
+        });
         return {
           teams,
-          activeTeamId: updated.id
+          activeTeamId: activeTeam.id
         };
       });
     },
@@ -243,9 +258,26 @@ export function useSyncSettings() {
     (enabled: boolean) => {
       setStoredSettings((prevRaw) => {
         const prev = normalizeSyncSettings(prevRaw);
+        if (!prev.activeTeamId) return prev;
+        const teams = prev.teams.map((team) => {
+          if (team.id !== prev.activeTeamId) return team;
+          if (!enabled) return { ...team, syncEnabled: false };
+
+          if (team.syncToken && team.teamSecret) {
+            return { ...team, syncEnabled: true };
+          }
+
+          const teamSecret = generateTeamSecret();
+          return {
+            ...team,
+            teamSecret,
+            syncToken: createSyncToken(team.teamName, teamSecret),
+            syncEnabled: true
+          };
+        });
         return {
           ...prev,
-          syncEnabled: enabled
+          teams
         };
       });
     },
@@ -256,7 +288,7 @@ export function useSyncSettings() {
     syncSettings,
     teams: syncSettings.teams,
     activeTeam,
-    syncEnabled: syncSettings.syncEnabled,
+    syncEnabled: Boolean(activeTeam?.syncEnabled),
     syncToken: activeTeam?.syncToken ?? '',
     createTeamSpace,
     updateActiveTeamName,
