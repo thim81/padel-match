@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Minus, RefreshCw, Share2, MessageCircle, MessageSquare, Copy, Users } from 'lucide-react';
+import { Plus, Minus, RefreshCw, Share2, MessageCircle, MessageSquare, Copy, Users, User } from 'lucide-react';
 import { useTeamStore } from '@/hooks/useTeamStore';
 import { Input } from '@/components/ui/input';
 import PlayerAvatar from '@/components/PlayerAvatar';
@@ -153,7 +153,8 @@ export default function Settings() {
 
       {/* Team section */}
       <section>
-        <div className="flex items-center justify-between mb-2 px-1">
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <User className="w-3.5 h-3.5 text-muted-foreground" />
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Your Team ({players.length})
           </h2>
