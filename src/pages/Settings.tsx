@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Minus, RefreshCw, Share2, MessageCircle, MessageSquare, Copy } from 'lucide-react';
+import { Plus, Minus, RefreshCw, Share2, MessageCircle, MessageSquare, Copy, Users } from 'lucide-react';
 import { useTeamStore } from '@/hooks/useTeamStore';
 import { Input } from '@/components/ui/input';
 import PlayerAvatar from '@/components/PlayerAvatar';
@@ -222,28 +222,13 @@ export default function Settings() {
 
       <section>
         <div className="flex items-center gap-2 mb-2 px-1">
-          <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+          <Users className="w-3.5 h-3.5 text-muted-foreground" />
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Cloud Sync
+            Manage team
           </h2>
         </div>
-        <div className="ios-grouped">
+        <div className="ios-grouped mt-3">
           <div className="px-4 py-3 space-y-2">
-            <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/20 px-3 py-2.5">
-              <div>
-                <p className="text-sm font-medium text-foreground">Enable Cloud Sync</p>
-                <p className="text-[11px] text-muted-foreground">
-                  {syncEnabled ? 'Sync is active for the selected team.' : 'Sync is off. Data stays local on this device.'}
-                </p>
-              </div>
-              <Switch checked={syncEnabled} onCheckedChange={setSyncEnabled} />
-            </div>
-            <button
-              onClick={openAddTeamModal}
-              className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold active:scale-[0.98] transition-transform"
-            >
-              Add New Team
-            </button>
             {teams.length > 0 && (
               <>
                 <div className="flex items-center gap-2">
@@ -274,7 +259,7 @@ export default function Settings() {
                 </div>
                 {hasTeamSpace ? (
                   <p className="text-[11px] leading-tight text-success">
-                    Active team: {activeTeam?.teamName}. Secret is stored securely and hidden.
+                    Active team: {activeTeam?.teamName}.
                   </p>
                 ) : (
                   <p className="text-[11px] leading-tight text-muted-foreground">
@@ -288,9 +273,34 @@ export default function Settings() {
                 )}
               </>
             )}
-            <p className="mt-2 text-[11px] leading-tight text-muted-foreground">
-              Team name is visible. A hidden team secret is generated automatically for secure sync.
-            </p>
+            <button
+              onClick={openAddTeamModal}
+              className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold active:scale-[0.98] transition-transform"
+            >
+              Add New Team
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Cloud Sync
+          </h2>
+        </div>
+        <div className="ios-grouped">
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/20 px-3 py-2.5">
+              <div>
+                <p className="text-sm font-medium text-foreground">Enable Cloud Sync</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {syncEnabled ? 'Sync is active for the selected team.' : 'Sync is off. Data stays local on this device.'}
+                </p>
+              </div>
+              <Switch checked={syncEnabled} onCheckedChange={setSyncEnabled} />
+            </div>
           </div>
         </div>
       </section>
