@@ -200,13 +200,15 @@ export default function Settings() {
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-success/10">
               <Plus className="w-4 h-4 text-success" />
             </div>
-            <Input
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              placeholder="Add player name"
-              className="flex-1 border-0 bg-transparent p-0 h-auto text-base rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
-            />
+            <div className="flex-1">
+              <Input
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                placeholder="Type player name"
+                className="h-10 rounded-lg border border-border/70 bg-background px-3 text-sm"
+              />
+            </div>
             <button
               onClick={handleAdd}
               disabled={!newName.trim()}
