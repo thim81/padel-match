@@ -207,11 +207,17 @@ export function useSyncSettings() {
         const prev = normalizeSyncSettings(prevRaw);
         const existing = prev.teams.find((item) => item.syncToken === team.syncToken);
         if (existing) {
-          return { ...prev, activeTeamId: existing.id };
+          return {
+            ...prev,
+            activeTeamId: existing.id,
+            teams: prev.teams.map((item) =>
+              item.id === existing.id ? { ...item, syncEnabled: true } : item
+            )
+          };
         }
 
         return {
-          teams: ensureDefaultTeam([team, ...prev.teams]),
+          teams: ensureDefaultTeam([{ ...team, syncEnabled: true }, ...prev.teams]),
           activeTeamId: team.id,
           syncEnabled: prev.syncEnabled
         };
