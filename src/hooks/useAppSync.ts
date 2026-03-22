@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Encounter, Player } from '@/types/encounter';
 import { fetchRemoteState, pushLocalState, SyncState } from '@/lib/sync';
+import { normalizeEncounterFormat } from '@/lib/formatRules';
 
 interface ActiveSyncSettings {
   teamName: string;
@@ -12,7 +13,9 @@ interface ActiveSyncSettings {
 function normalizeRemoteState(state: SyncState): SyncState {
   return {
     players: Array.isArray(state.players) ? state.players : [],
-    encounters: Array.isArray(state.encounters) ? state.encounters : [],
+    encounters: Array.isArray(state.encounters)
+      ? state.encounters.map((encounter) => normalizeEncounterFormat(encounter))
+      : [],
     settings: {
       teamName: state.settings?.teamName ?? '',
       teamSecret: state.settings?.teamSecret ?? '',

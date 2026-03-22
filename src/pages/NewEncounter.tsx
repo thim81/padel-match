@@ -3,17 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ChevronRight, Shield } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { EncounterMode, MatchFormat, Encounter, createEmptyRound, createEmptyMatch } from '@/types/encounter';
+import { EncounterMode, FormatFamily, FormatType, Encounter, createEmptyRound, createEmptyMatch } from '@/types/encounter';
 import { useEncounterStore } from '@/hooks/useEncounterStore';
 import { useTeamStore } from '@/hooks/useTeamStore';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { DEFAULT_FORMAT_TYPE_BY_FAMILY, FORMAT_RULES, FORMAT_TYPES_BY_FAMILY } from '@/lib/formatRules';
 
 export default function NewEncounter() {
   const navigate = useNavigate();
@@ -23,7 +17,8 @@ export default function NewEncounter() {
   const isPersonalTeam = Boolean(activeTeam?.isDefault);
   const [opponentName, setOpponentName] = useState('');
   const [mode, setMode] = useState<EncounterMode>(isPersonalTeam ? 'single' : 'interclub');
-  const [format, setFormat] = useState<MatchFormat>('1set9');
+  const [formatFamily, setFormatFamily] = useState<FormatFamily>('single_set');
+  const [formatType, setFormatType] = useState<FormatType>('FMT_101');
 
   const primaryMode: EncounterMode = isPersonalTeam ? 'single' : 'interclub';
   const secondaryMode: EncounterMode = isPersonalTeam ? 'tournament' : 'single';
@@ -39,6 +34,13 @@ export default function NewEncounter() {
     }
   }, [isPersonalTeam, mode]);
 
+  useEffect(() => {
+    const validTypes = FORMAT_TYPES_BY_FAMILY[formatFamily];
+    if (!validTypes.includes(formatType)) {
+      setFormatType(DEFAULT_FORMAT_TYPE_BY_FAMILY[formatFamily]);
+    }
+  }, [formatFamily, formatType]);
+
   const minPlayers = mode === 'interclub' ? 4 : 2;
   const canStart = players.length >= minPlayers && (!requiresOpponentName || Boolean(opponentName.trim()));
 
@@ -52,7 +54,8 @@ export default function NewEncounter() {
       mode,
       tournamentId: mode === 'tournament' ? crypto.randomUUID() : undefined,
       tournamentRound: mode === 'tournament' ? 1 : undefined,
-      format,
+      formatFamily,
+      formatType,
       rounds: mode === 'interclub' ? [createEmptyRound(1), createEmptyRound(2), createEmptyRound(3)] : [],
       singleMatch: mode !== 'interclub' ? createEmptyMatch('single-match') : undefined,
       status: 'in-progress',
@@ -147,34 +150,49 @@ export default function NewEncounter() {
           Match Format
         </h2>
         <div className="relative flex bg-muted rounded-[10px] p-[3px]">
-          {/* Sliding pill */}
           <motion.div
             layout
             transition={{ type: 'spring', stiffness: 500, damping: 35 }}
             className="absolute top-[3px] bottom-[3px] rounded-[8px] bg-card shadow-sm"
-            style={{ width: 'calc(50% - 3px)', left: format === '1set9' ? '3px' : 'calc(50%)' }}
+            style={{ width: 'calc(50% - 3px)', left: formatFamily === 'single_set' ? '3px' : 'calc(50%)' }}
           />
           <button
-            onClick={() => setFormat('1set9')}
+            onClick={() => setFormatFamily('single_set')}
             className="relative z-10 flex-1 py-2.5 text-center rounded-[8px] transition-colors"
           >
-            <span className={`text-[13px] font-semibold ${format === '1set9' ? 'text-foreground' : 'text-muted-foreground'}`}>
-              1 Set to 9
+            <span className={`text-[13px] font-semibold ${formatFamily === 'single_set' ? 'text-foreground' : 'text-muted-foreground'}`}>
+              Single Set
             </span>
           </button>
           <button
-            onClick={() => setFormat('2sets')}
+            onClick={() => setFormatFamily('two_sets')}
             className="relative z-10 flex-1 py-2.5 text-center rounded-[8px] transition-colors"
           >
-            <span className={`text-[13px] font-semibold ${format === '2sets' ? 'text-foreground' : 'text-muted-foreground'}`}>
+            <span className={`text-[13px] font-semibold ${formatFamily === 'two_sets' ? 'text-foreground' : 'text-muted-foreground'}`}>
               2 Sets
             </span>
           </button>
         </div>
+
+        <div className="mt-2 flex flex-col gap-2">
+          {FORMAT_TYPES_BY_FAMILY[formatFamily].map((typeId) => {
+            const active = formatType === typeId;
+            return (
+              <button
+                key={typeId}
+                type="button"
+                onClick={() => setFormatType(typeId)}
+                className={`text-left rounded-xl border px-3 py-2 transition ${
+                  active ? 'border-primary bg-primary/5' : 'border-border bg-card'
+                }`}
+              >
+                <p className="text-sm text-foreground">{FORMAT_RULES[typeId].label}</p>
+              </button>
+            );
+          })}
+        </div>
         <p className="text-xs text-muted-foreground mt-2 px-1">
-          {format === '2sets'
-            ? 'Sets to 6 · TB at 6-6 (first to 7) · 3rd set super TB (first to 10)'
-            : 'Single set to 9 · Tie-break at 8–8 (first to 10)'}
+          {FORMAT_RULES[formatType].description}
         </p>
       </section>
 

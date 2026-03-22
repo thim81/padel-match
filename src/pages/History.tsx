@@ -1,11 +1,12 @@
 import { useEncounterStore } from '@/hooks/useEncounterStore';
 import { useTeamStore } from '@/hooks/useTeamStore';
 import { formatMatchScore, getSetWinner } from '@/lib/scoring';
-import { Encounter, Match, MatchFormat } from '@/types/encounter';
+import { Encounter, Match, FormatType } from '@/types/encounter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Trophy, Plus, Trash2, CalendarDays } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FORMAT_RULES, isTwoSetsFormat } from '@/lib/formatRules';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,7 +53,7 @@ function EncounterDetail({ encounter, players }: { encounter: Encounter; players
               )}
             </div>
             <span className="text-sm font-mono text-muted-foreground ml-2">
-              {formatMatchScore(match, encounter.format)}
+              {formatMatchScore(match, encounter.formatType)}
             </span>
           </div>
         </div>
@@ -88,7 +89,7 @@ function EncounterDetail({ encounter, players }: { encounter: Encounter; players
                   )}
                 </div>
                 <span className="text-sm font-mono text-muted-foreground ml-2">
-                  {formatMatchScore(match, encounter.format)}
+                  {formatMatchScore(match, encounter.formatType)}
                 </span>
               </div>
             ))}
@@ -107,11 +108,11 @@ function toDayKey(isoDate: string): string {
   return `${y}-${m}-${day}`;
 }
 
-function getTiebreakSummary(match: Match, format: MatchFormat): string | null {
+function getTiebreakSummary(match: Match, formatType: FormatType): string | null {
   const details = match.sets
     .map((set, i) => {
       if (!set.tiebreak) return null;
-      if (format === '2sets' && i === 2) return `STB ${set.tiebreak.home}-${set.tiebreak.away}`;
+      if (isTwoSetsFormat(formatType) && i === 2) return `STB ${set.tiebreak.home}-${set.tiebreak.away}`;
       return `TB${i + 1} ${set.tiebreak.home}-${set.tiebreak.away}`;
     })
     .filter(Boolean) as string[];
@@ -119,8 +120,8 @@ function getTiebreakSummary(match: Match, format: MatchFormat): string | null {
   return details.length > 0 ? details.join(' · ') : null;
 }
 
-function getCompactMatchScore(match: Match, format: MatchFormat, side: 'home' | 'away'): string {
-  if (format === '1set9') {
+function getCompactMatchScore(match: Match, formatType: FormatType, side: 'home' | 'away'): string {
+  if (!isTwoSetsFormat(formatType)) {
     const firstSet = match.sets[0];
     if (!firstSet) return '-';
     const score = side === 'home' ? firstSet.home : firstSet.away;
@@ -129,7 +130,7 @@ function getCompactMatchScore(match: Match, format: MatchFormat, side: 'home' | 
 
   let wonSets = 0;
   match.sets.forEach((set, i) => {
-    const winner = getSetWinner(set, format, i === 2);
+    const winner = getSetWinner(set, formatType, i === 2);
     if (winner === side) wonSets++;
   });
   return String(wonSets);
@@ -258,7 +259,7 @@ export default function History() {
                         <span>
                           {encounter.mode === 'tournament'
                             ? `Tornooi${encounter.tournamentRound ? ` R${encounter.tournamentRound}` : ''}`
-                            : isSingleMode ? 'Single' : 'Interclub'} · {encounter.format === '2sets' ? '2 Sets' : '1 Set to 9'}
+                            : isSingleMode ? 'Single' : 'Interclub'} · {FORMAT_RULES[encounter.formatType].label}
                         </span>
                       </div>
                     </div>
@@ -271,7 +272,7 @@ export default function History() {
                     {(isSingleMode ? [{ number: 1, matches: [encounter.singleMatch!] }] : encounter.rounds).map(round => {
                       if (isSingleMode) {
                         const match = round.matches[0];
-                        const tiebreak = getTiebreakSummary(match, encounter.format);
+                        const tiebreak = getTiebreakSummary(match, encounter.formatType);
                         return (
                           <div
                             key={`summary-single-${encounter.id}`}
@@ -287,13 +288,13 @@ export default function History() {
                               Match
                             </p>
                             <p className={`mt-1 font-mono text-[13px] leading-tight tabular-nums ${match.winner === 'home' ? 'text-success' : 'text-foreground'}`}>
-                              {getCompactMatchScore(match, encounter.format, 'home')}
+                              {getCompactMatchScore(match, encounter.formatType, 'home')}
                             </p>
                             <p className="mt-0.5 text-[9px] leading-none text-muted-foreground/80 tabular-nums">
                               Home
                             </p>
                             <p className={`mt-0.5 font-mono text-[13px] leading-tight tabular-nums ${match.winner === 'away' ? 'text-success' : 'text-muted-foreground'}`}>
-                              {getCompactMatchScore(match, encounter.format, 'away')}
+                              {getCompactMatchScore(match, encounter.formatType, 'away')}
                             </p>
                             {tiebreak && (
                               <p className="mt-0.5 text-[8px] leading-tight text-muted-foreground">{tiebreak}</p>
@@ -307,7 +308,7 @@ export default function History() {
                       const roundWin = homeWins > awayWins;
                       const roundLoss = awayWins > homeWins;
                       const tiebreaks = round.matches
-                        .map(match => getTiebreakSummary(match, encounter.format))
+                        .map(match => getTiebreakSummary(match, encounter.formatType))
                         .filter(Boolean)
                         .join(' · ');
 
@@ -331,7 +332,7 @@ export default function History() {
                                 key={`home-score-${match.id}`}
                                 className={match.winner === 'home' ? 'text-success' : match.winner === 'away' ? 'text-destructive' : 'text-foreground'}
                               >
-                                {getCompactMatchScore(match, encounter.format, 'home')}
+                                {getCompactMatchScore(match, encounter.formatType, 'home')}
                                 {mi === 0 && <span className="text-muted-foreground/70"> | </span>}
                               </span>
                             ))}
@@ -345,7 +346,7 @@ export default function History() {
                                 key={`away-score-${match.id}`}
                                 className={match.winner === 'away' ? 'text-success' : match.winner === 'home' ? 'text-destructive' : 'text-muted-foreground'}
                               >
-                                {getCompactMatchScore(match, encounter.format, 'away')}
+                                {getCompactMatchScore(match, encounter.formatType, 'away')}
                                 {mi === 0 && <span className="text-muted-foreground/70"> | </span>}
                               </span>
                             ))}

@@ -1,14 +1,14 @@
-import { Match, MatchFormat, SetScore } from '@/types/encounter';
-import { getMatchWinner, needsTiebreak, needsSuperTiebreak, getSetWinner, formatMatchScore } from '@/lib/scoring';
+import { Match, FormatType, SetScore } from '@/types/encounter';
+import { getMatchWinner, needsTiebreak, getSetWinner, formatMatchScore } from '@/lib/scoring';
 import { Minus, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { isTwoSetsFormat } from '@/lib/formatRules';
 
 interface MatchScoreCardProps {
   match: Match;
   matchIndex: number;
-  format: MatchFormat;
+  formatType: FormatType;
   homePlayerNames: [string, string];
-  awayPlayerNames?: [string, string];
   onChange: (match: Match) => void;
 }
 
@@ -39,12 +39,11 @@ function ScoreStepper({ value, onChange, min = 0, max = 13 }: {
 export default function MatchScoreCard({
   match,
   matchIndex,
-  format,
+  formatType,
   homePlayerNames,
-  awayPlayerNames,
   onChange,
 }: MatchScoreCardProps) {
-  const winner = getMatchWinner(match, format);
+  const winner = getMatchWinner(match, formatType);
 
   const safeMatch = match.sets.length === 0
     ? { ...match, sets: [{ home: 0, away: 0 } as SetScore] }
@@ -55,19 +54,19 @@ export default function MatchScoreCard({
     if (!newSets[setIndex]) newSets[setIndex] = { home: 0, away: 0 };
     newSets[setIndex] = { ...newSets[setIndex], [field]: value };
 
-    if (!needsTiebreak(newSets[setIndex].home, newSets[setIndex].away, format)) {
+    if (!needsTiebreak(newSets[setIndex].home, newSets[setIndex].away, formatType)) {
       delete newSets[setIndex].tiebreak;
     }
 
-    if (format === '2sets' && setIndex < 2) {
-      const setWinner = getSetWinner(newSets[setIndex], format, false);
+    if (isTwoSetsFormat(formatType) && setIndex < 2) {
+      const setWinner = getSetWinner(newSets[setIndex], formatType, false);
       if (setWinner && !newSets[setIndex + 1] && setIndex === 0) {
         newSets.push({ home: 0, away: 0 });
       }
       if (setIndex === 1 && newSets.length === 2) {
         let hw = 0, aw = 0;
         for (let i = 0; i < 2; i++) {
-          const w = getSetWinner(newSets[i], format, false);
+          const w = getSetWinner(newSets[i], formatType, false);
           if (w === 'home') hw++;
           if (w === 'away') aw++;
         }
@@ -78,7 +77,7 @@ export default function MatchScoreCard({
     }
 
     const updatedMatch = { ...safeMatch, sets: newSets, winner: undefined };
-    const newWinner = getMatchWinner(updatedMatch, format);
+    const newWinner = getMatchWinner(updatedMatch, formatType);
     if (newWinner) updatedMatch.winner = newWinner;
     onChange(updatedMatch);
   };
@@ -92,7 +91,7 @@ export default function MatchScoreCard({
     };
 
     const updatedMatch = { ...safeMatch, sets: newSets, winner: undefined };
-    const newWinner = getMatchWinner(updatedMatch, format);
+    const newWinner = getMatchWinner(updatedMatch, formatType);
     if (newWinner) updatedMatch.winner = newWinner;
     onChange(updatedMatch);
   };
@@ -104,7 +103,10 @@ export default function MatchScoreCard({
       className={`ios-card p-4 ${winner ? 'ring-1 ring-success/30' : ''}`}
     >
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-foreground">Match {matchIndex + 1}</h3>
+        <h3 className="text-sm font-semibold truncate">
+          <span className="text-foreground">Match {matchIndex + 1}</span>
+          <span className="text-muted-foreground"> · {homePlayerNames[0] || '?'} & {homePlayerNames[1] || '?'}</span>
+        </h3>
         {winner && (
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
             winner === 'home' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
@@ -114,25 +116,20 @@ export default function MatchScoreCard({
         )}
       </div>
 
-      <p className="text-xs text-muted-foreground mb-4">
-        {homePlayerNames[0] || '?'} & {homePlayerNames[1] || '?'} vs {awayPlayerNames
-          ? `${awayPlayerNames[0] || '?'} & ${awayPlayerNames[1] || '?'}`
-          : 'Opponent'}
-      </p>
-
       {winner && (
         <p className="text-sm font-mono text-muted-foreground mb-4">
-          {formatMatchScore(safeMatch, format)}
+          {formatMatchScore(safeMatch, formatType)}
         </p>
       )}
 
       {/* Set inputs */}
       <div className="flex flex-col gap-4">
         {safeMatch.sets.map((set, si) => {
-          const isThirdSet = format === '2sets' && si === 2;
+          const isThirdSet = isTwoSetsFormat(formatType) && si === 2;
           const showTB = isThirdSet
             ? true
-            : needsTiebreak(set.home, set.away, format);
+            : needsTiebreak(set.home, set.away, formatType);
+          const tbMax = formatType === 'FMT_102' && !isThirdSet ? 10 : 30;
 
           return (
             <div key={si} className="bg-secondary/30 rounded-xl p-4">
@@ -168,7 +165,7 @@ export default function MatchScoreCard({
                       <ScoreStepper
                         value={set.home}
                         onChange={v => updateSet(si, 'home', v)}
-                        max={format === '2sets' ? 7 : 9}
+                        max={isTwoSetsFormat(formatType) ? 7 : 9}
                       />
                     </div>
                     <span className="text-muted-foreground font-bold text-xl">–</span>
@@ -177,7 +174,7 @@ export default function MatchScoreCard({
                       <ScoreStepper
                         value={set.away}
                         onChange={v => updateSet(si, 'away', v)}
-                        max={format === '2sets' ? 7 : 9}
+                        max={isTwoSetsFormat(formatType) ? 7 : 9}
                       />
                     </div>
                   </div>
@@ -190,7 +187,7 @@ export default function MatchScoreCard({
                           <ScoreStepper
                             value={set.tiebreak?.home || 0}
                             onChange={v => updateTiebreak(si, 'home', v)}
-                            max={30}
+                            max={tbMax}
                           />
                         </div>
                         <span className="text-muted-foreground font-bold text-lg">–</span>
@@ -198,7 +195,7 @@ export default function MatchScoreCard({
                           <ScoreStepper
                             value={set.tiebreak?.away || 0}
                             onChange={v => updateTiebreak(si, 'away', v)}
-                            max={30}
+                            max={tbMax}
                           />
                         </div>
                       </div>

@@ -1,4 +1,6 @@
-export type MatchFormat = '2sets' | '1set9';
+export type LegacyMatchFormat = '2sets' | '1set9';
+export type FormatFamily = 'single_set' | 'two_sets';
+export type FormatType = 'FMT_101' | 'FMT_102' | 'FMT_201';
 export type EncounterMode = 'interclub' | 'single' | 'tournament';
 
 export interface Player {
@@ -47,12 +49,23 @@ export interface Encounter {
   mode: EncounterMode;
   tournamentId?: string;
   tournamentRound?: number;
-  format: MatchFormat;
+  formatFamily: FormatFamily;
+  formatType: FormatType;
+  format?: LegacyMatchFormat;
   rounds: Round[];
   singleMatch?: Match;
   status: 'in-progress' | 'completed';
   result?: EncounterResult;
 }
+
+export interface LegacyEncounter
+  extends Omit<Encounter, 'formatFamily' | 'formatType'> {
+  format: LegacyMatchFormat;
+  formatFamily?: never;
+  formatType?: never;
+}
+
+export type StoredEncounter = Encounter | LegacyEncounter;
 
 export function createEmptyMatch(id: string): Match {
   return {

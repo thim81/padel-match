@@ -5,6 +5,7 @@ import { useEncounterStore } from '@/hooks/useEncounterStore';
 import { useTeamStore } from '@/hooks/useTeamStore';
 import { calculateEncounterResult, calculateSingleEncounterResult, formatMatchScore, getSetWinner } from '@/lib/scoring';
 import { Encounter, createEmptyMatch } from '@/types/encounter';
+import { isTwoSetsFormat } from '@/lib/formatRules';
 
 export default function Results() {
   const { encounterId } = useParams<{ encounterId: string }>();
@@ -24,8 +25,8 @@ export default function Results() {
 
   const isSingleMode = encounter.mode !== 'interclub';
   const result = isSingleMode && encounter.singleMatch
-    ? calculateSingleEncounterResult(encounter.singleMatch, encounter.format)
-    : calculateEncounterResult(encounter.rounds, encounter.format);
+    ? calculateSingleEncounterResult(encounter.singleMatch, encounter.formatType)
+    : calculateEncounterResult(encounter.rounds, encounter.formatType);
   const isWin = result.winner === 'home';
   const getPlayerName = (id: string) => players.find(p => p.id === id)?.name || '?';
   const tournamentRunId = encounter.mode === 'tournament' ? (encounter.tournamentId || encounter.id) : '';
@@ -58,7 +59,8 @@ export default function Results() {
       mode: 'tournament',
       tournamentId: encounter.tournamentId || encounter.id,
       tournamentRound: (encounter.tournamentRound || 1) + 1,
-      format: encounter.format,
+      formatFamily: encounter.formatFamily,
+      formatType: encounter.formatType,
       rounds: [],
       singleMatch: nextMatch,
       status: 'in-progress',
@@ -205,7 +207,11 @@ export default function Results() {
 
                             <div className="mt-1 flex items-center justify-center gap-3 font-mono tabular-nums">
                               {sets.map((set, si) => {
-                                const winner = getSetWinner(set, matchEncounter.format, matchEncounter.format === '2sets' && si === 2);
+                                const winner = getSetWinner(
+                                  set,
+                                  matchEncounter.formatType,
+                                  isTwoSetsFormat(matchEncounter.formatType) && si === 2
+                                );
                                 const homeScoreClass = winner === 'home'
                                   ? 'text-success font-bold'
                                   : winner === 'away'
@@ -230,7 +236,11 @@ export default function Results() {
                             </div>
                             <div className="mt-1 flex items-center justify-center gap-3 font-mono tabular-nums">
                               {sets.map((set, si) => {
-                                const winner = getSetWinner(set, matchEncounter.format, matchEncounter.format === '2sets' && si === 2);
+                                const winner = getSetWinner(
+                                  set,
+                                  matchEncounter.formatType,
+                                  isTwoSetsFormat(matchEncounter.formatType) && si === 2
+                                );
                                 const awayScoreClass = winner === 'away'
                                   ? 'text-success font-bold'
                                   : winner === 'home'
@@ -285,7 +295,7 @@ export default function Results() {
                   </span>
                 </div>
                 <span className="text-sm font-mono text-muted-foreground">
-                  {formatMatchScore(encounter.singleMatch, encounter.format)}
+                  {formatMatchScore(encounter.singleMatch, encounter.formatType)}
                 </span>
               </div>
             </div>
@@ -323,7 +333,7 @@ export default function Results() {
                       </div>
                     </div>
                     <span className="text-sm font-mono text-muted-foreground">
-                      {formatMatchScore(match, encounter.format)}
+                      {formatMatchScore(match, encounter.formatType)}
                     </span>
                   </div>
                 ))}

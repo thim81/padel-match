@@ -53,7 +53,7 @@ export default function RoundPage() {
     updateEncounter(encounter.id, { rounds: newRounds });
   };
 
-  const roundComplete = isRoundComplete(round, encounter.format);
+  const roundComplete = isRoundComplete(round, encounter.formatType);
   const pairsAssigned = round.matches.every(m => m.homePair[0] && m.homePair[1]);
   const isLastRound = roundIdx === 2;
   const [showAssignPlayers, setShowAssignPlayers] = useState(true);
@@ -159,7 +159,7 @@ export default function RoundPage() {
                 key={match.id}
                 match={match}
                 matchIndex={mi}
-                format={encounter.format}
+                formatType={encounter.formatType}
                 homePlayerNames={[
                   getPlayerName(match.homePair[0]),
                   getPlayerName(match.homePair[1]),

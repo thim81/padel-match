@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Plus, Clock, Trophy, ChevronRight, Play, Users } from 'lucide-react';
 import { useEncounterStore } from '@/hooks/useEncounterStore';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
+import { FORMAT_RULES } from '@/lib/formatRules';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -118,8 +119,8 @@ const Index = () => {
                   {enc.mode === 'single' || enc.mode === 'tournament'
                     ? `${enc.mode === 'tournament'
                         ? `Tornooi${enc.tournamentRound ? ` R${enc.tournamentRound}` : ''}`
-                        : 'Single'} · ${enc.format === '2sets' ? '2 Sets' : '1 Set to 9'}`
-                    : enc.format === '2sets' ? 'Interclub · 2 Sets' : 'Interclub · 1 Set to 9'}
+                        : 'Single'} · ${FORMAT_RULES[enc.formatType].label}`
+                    : `Interclub · ${FORMAT_RULES[enc.formatType].label}`}
                 </p>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground/50" />
