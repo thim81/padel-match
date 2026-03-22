@@ -59,7 +59,7 @@ export default function Layout() {
                 <tab.icon
                   className={`w-6 h-6 transition-colors ${
                     isActive ? 'text-primary' : 'text-muted-foreground'
-                  }`}
+                  } mt-1`}
                   strokeWidth={isActive ? 2.2 : 1.5}
                 />
                 <span
