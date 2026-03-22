@@ -43,6 +43,7 @@ export default function PlayerPairSelector({
     label: string
   ) => {
     const available = getAvailable(pair, position);
+    const selectedPlayer = players.find((player) => player.id === pair[position]);
 
     return (
       <div className="flex-1">
@@ -56,7 +57,14 @@ export default function PlayerPairSelector({
           }}
         >
           <SelectTrigger className="mt-1 bg-card border-border/50 h-10 rounded-lg text-sm">
-            <SelectValue placeholder="Select..." />
+            {selectedPlayer ? (
+              <div className="flex min-w-0 items-center gap-2">
+                <PlayerAvatar name={selectedPlayer.name} size="sm" />
+                <span className="truncate">{selectedPlayer.name}</span>
+              </div>
+            ) : (
+              <SelectValue placeholder="Select..." />
+            )}
           </SelectTrigger>
           <SelectContent className="bg-popover border-border z-50">
             {available.map(p => (
