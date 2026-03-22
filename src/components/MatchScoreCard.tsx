@@ -108,19 +108,24 @@ export default function MatchScoreCard({
           <span className="text-muted-foreground"> · {homePlayerNames[0] || '?'} & {homePlayerNames[1] || '?'}</span>
         </h3>
         {winner && (
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-            winner === 'home' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
-          }`}>
-            {winner === 'home' ? 'Win' : 'Loss'}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+              winner === 'home' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+            }`}>
+              {winner === 'home' ? 'Win' : 'Loss'}
+            </span>
+            <span
+              className={`rounded-full px-2.5 py-1 text-sm font-mono tabular-nums ${
+                winner === 'home'
+                  ? 'bg-success/10 text-success'
+                  : 'bg-destructive/10 text-destructive'
+              }`}
+            >
+              {formatMatchScore(safeMatch, formatType)}
+            </span>
+          </div>
         )}
       </div>
-
-      {winner && (
-        <p className="text-sm font-mono text-muted-foreground mb-4">
-          {formatMatchScore(safeMatch, formatType)}
-        </p>
-      )}
 
       {/* Set inputs */}
       <div className="flex flex-col gap-4">
@@ -133,9 +138,11 @@ export default function MatchScoreCard({
 
           return (
             <div key={si} className="bg-secondary/30 rounded-xl p-4">
-              <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-3">
-                {isThirdSet ? 'Super Tie-Break' : `Set ${si + 1}`}
-              </p>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-[10px] uppercase font-semibold text-muted-foreground">
+                  {isThirdSet ? 'Super Tie-Break' : `Set ${si + 1}`}
+                </p>
+              </div>
 
               {isThirdSet ? (
                 <div className="flex items-center justify-between px-2">
