@@ -54,7 +54,7 @@ export default function Layout() {
               <button
                 key={'key' in tab ? tab.key : tab.path}
                 onClick={() => navigate(tab.path)}
-                className="flex flex-col items-center gap-0.5 pt-1.5 pb-1 px-4 relative"
+                className="flex flex-col items-center gap-0.5 pt-1.5 pb-0 px-4 relative"
               >
                 <tab.icon
                   className={`w-6 h-6 transition-colors ${
