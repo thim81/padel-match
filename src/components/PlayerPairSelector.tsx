@@ -1,5 +1,6 @@
 import { Player } from '@/types/encounter';
 import PlayerAvatar from '@/components/PlayerAvatar';
+import { X } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -48,35 +49,52 @@ export default function PlayerPairSelector({
     return (
       <div className="flex-1">
         <label className="text-[10px] uppercase text-muted-foreground font-medium tracking-wide">{label}</label>
-        <Select
-          value={pair[position] ?? ''}
-          onValueChange={(value) => {
-            const newPair: [string, string] = [...pair] as [string, string];
-            newPair[position] = value;
-            onChange(newPair);
-          }}
-        >
-          <SelectTrigger className="mt-1 bg-card border-border/50 h-10 rounded-lg text-sm">
-            {selectedPlayer ? (
-              <div className="flex min-w-0 items-center gap-2">
-                <PlayerAvatar name={selectedPlayer.name} size="sm" />
-                <span className="truncate">{selectedPlayer.name}</span>
-              </div>
-            ) : (
-              <SelectValue placeholder="Select..." />
-            )}
-          </SelectTrigger>
-          <SelectContent className="bg-popover border-border z-50">
-            {available.map(p => (
-              <SelectItem key={p.id} value={p.id}>
-                <div className="flex items-center gap-2">
-                  <PlayerAvatar name={p.name} size="sm" />
-                  <span>{p.name}</span>
+        <div className="mt-1 flex items-center gap-1.5">
+          <Select
+            value={pair[position] ?? ''}
+            onValueChange={(value) => {
+              const newPair: [string, string] = [...pair] as [string, string];
+              newPair[position] = value;
+              onChange(newPair);
+            }}
+          >
+            <SelectTrigger className="bg-card border-border/50 h-10 rounded-lg text-sm flex-1">
+              {selectedPlayer ? (
+                <div className="flex min-w-0 items-center gap-2">
+                  <PlayerAvatar name={selectedPlayer.name} size="sm" />
+                  <span className="truncate">{selectedPlayer.name}</span>
                 </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              ) : (
+                <SelectValue placeholder="Select..." />
+              )}
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border z-50">
+              {available.map(p => (
+                <SelectItem key={p.id} value={p.id}>
+                  <div className="flex items-center gap-2">
+                    <PlayerAvatar name={p.name} size="sm" />
+                    <span>{p.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {pair[position] && (
+            <button
+              type="button"
+              onClick={() => {
+                const newPair: [string, string] = [...pair] as [string, string];
+                newPair[position] = '';
+                onChange(newPair);
+              }}
+              className="h-8 w-8 shrink-0 rounded-md border border-border/60 bg-background text-muted-foreground hover:text-foreground"
+              aria-label={`Reset ${label.toLowerCase()}`}
+              title="Reset player"
+            >
+              <X className="mx-auto h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
     );
   };
