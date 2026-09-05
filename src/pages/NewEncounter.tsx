@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ChevronRight, Shield } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { EncounterMode, FormatFamily, FormatType, Encounter, createEmptyRound, createEmptyMatch } from '@/types/encounter';
+import { EncounterMode, FormatFamily, FormatType, Encounter, createEmptyMatch } from '@/types/encounter';
 import { useEncounterStore } from '@/hooks/useEncounterStore';
 import { useTeamStore } from '@/hooks/useTeamStore';
 import { useSyncSettings } from '@/hooks/useSyncSettings';
 import { DEFAULT_FORMAT_TYPE_BY_FAMILY, FORMAT_RULES, FORMAT_TYPES_BY_FAMILY } from '@/lib/formatRules';
+import { createInterclubRounds } from '@/lib/encounterRounds';
 
 export default function NewEncounter() {
   const navigate = useNavigate();
@@ -56,7 +57,7 @@ export default function NewEncounter() {
       tournamentRound: mode === 'tournament' ? 1 : undefined,
       formatFamily,
       formatType,
-      rounds: mode === 'interclub' ? [createEmptyRound(1), createEmptyRound(2), createEmptyRound(3)] : [],
+      rounds: mode === 'interclub' ? createInterclubRounds(formatType) : [],
       singleMatch: mode !== 'interclub' ? createEmptyMatch('single-match') : undefined,
       status: 'in-progress',
     };

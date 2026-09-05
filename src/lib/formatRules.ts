@@ -1,4 +1,10 @@
-import { Encounter, FormatFamily, FormatType, LegacyMatchFormat, StoredEncounter } from '@/types/encounter';
+import {
+  Encounter,
+  FormatFamily,
+  FormatType,
+  LegacyMatchFormat,
+  StoredEncounter
+} from '@/types/encounter';
 
 export interface FormatRule {
   id: FormatType;
@@ -6,6 +12,7 @@ export interface FormatRule {
   label: string;
   description: string;
   goldenPoint: boolean;
+  interclubRoundCount: 2 | 3;
 }
 
 export const FORMAT_RULES: Record<FormatType, FormatRule> = {
@@ -14,21 +21,24 @@ export const FORMAT_RULES: Record<FormatType, FormatRule> = {
     family: 'single_set',
     label: 'Single set to 9. At 8-8, tie-break to 7.',
     description: 'Single set to 9. At 8-8, tie-break to 7.',
-    goldenPoint: false
+    goldenPoint: false,
+    interclubRoundCount: 3
   },
   FMT_102: {
     id: 'FMT_102',
     family: 'single_set',
     label: 'Single set to 9. At 8-8, super tie-break to 10.',
     description: 'Single set to 9. At 8-8, super tie-break to 10.',
-    goldenPoint: true
+    goldenPoint: true,
+    interclubRoundCount: 3
   },
   FMT_201: {
     id: 'FMT_201',
     family: 'two_sets',
     label: '2 sets to 6 · TB7 · 3rd STB10 · golden point',
     description: 'Sets to 6 with TB at 6-6. Third set super tie-break to 10.',
-    goldenPoint: true
+    goldenPoint: true,
+    interclubRoundCount: 2
   }
 };
 
@@ -42,7 +52,10 @@ export const DEFAULT_FORMAT_TYPE_BY_FAMILY: Record<FormatFamily, FormatType> = {
   two_sets: 'FMT_201'
 };
 
-export const LEGACY_TO_FORMAT: Record<LegacyMatchFormat, { formatFamily: FormatFamily; formatType: FormatType }> = {
+export const LEGACY_TO_FORMAT: Record<
+  LegacyMatchFormat,
+  { formatFamily: FormatFamily; formatType: FormatType }
+> = {
   '1set9': { formatFamily: 'single_set', formatType: 'FMT_101' },
   '2sets': { formatFamily: 'two_sets', formatType: 'FMT_201' }
 };

@@ -1,8 +1,9 @@
 import { Encounter, StoredEncounter } from '@/types/encounter';
 import { useLocalStorage } from './useLocalStorage';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useSyncSettings } from './useSyncSettings';
 import { normalizeEncounterFormat } from '@/lib/formatRules';
+import { normalizeInterclubRounds } from '@/lib/encounterRounds';
 
 const STORAGE_KEY_PREFIX = 'padel-encounters';
 
@@ -11,9 +12,25 @@ export function useEncounterStore() {
   const storageKey = `${STORAGE_KEY_PREFIX}:${activeTeam?.id ?? 'local'}`;
   const [storedEncounters, setEncounters] = useLocalStorage<StoredEncounter[]>(storageKey, []);
   const encounters = useMemo(
-    () => storedEncounters.map((encounter) => normalizeEncounterFormat(encounter)),
+    () =>
+      storedEncounters.map((encounter) =>
+        normalizeInterclubRounds(normalizeEncounterFormat(encounter))
+      ),
     [storedEncounters]
   );
+
+  useEffect(() => {
+    const needsPersistence = encounters.some(
+      (encounter, index) => encounter !== storedEncounters[index]
+    );
+    if (needsPersistence) {
+      setEncounters((currentStoredEncounters) =>
+        currentStoredEncounters.map((encounter) =>
+          normalizeInterclubRounds(normalizeEncounterFormat(encounter))
+        )
+      );
+    }
+  }, [encounters, setEncounters, storedEncounters]);
 
   const addEncounter = useCallback(
     (encounter: Encounter) => {

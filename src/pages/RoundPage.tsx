@@ -22,10 +22,32 @@ export default function RoundPage() {
     }
   }, [encounter, navigate]);
 
-  if (encounter && encounter.mode !== 'interclub') return null;
-
   const roundIdx = parseInt(roundNumber || '1') - 1;
   const round = encounter?.rounds[roundIdx];
+  const pairsAssigned = round?.matches.every(m => m.homePair[0] && m.homePair[1]) ?? false;
+  const [showAssignPlayers, setShowAssignPlayers] = useState(true);
+
+  useEffect(() => {
+    if (!pairsAssigned) {
+      setShowAssignPlayers(true);
+      return;
+    }
+    setShowAssignPlayers(false);
+  }, [pairsAssigned, roundIdx]);
+
+  useEffect(() => {
+    if (
+      encounter?.mode === 'interclub' &&
+      !round &&
+      encounter.rounds.length > 0
+    ) {
+      navigate(`/encounter/${encounter.id}/round/${encounter.rounds.length}`, {
+        replace: true
+      });
+    }
+  }, [encounter, navigate, round]);
+
+  if (encounter && encounter.mode !== 'interclub') return null;
 
   if (!encounter || !round) {
     return (
@@ -54,17 +76,7 @@ export default function RoundPage() {
   };
 
   const roundComplete = isRoundComplete(round, encounter.formatType);
-  const pairsAssigned = round.matches.every(m => m.homePair[0] && m.homePair[1]);
-  const isLastRound = roundIdx === 2;
-  const [showAssignPlayers, setShowAssignPlayers] = useState(true);
-
-  useEffect(() => {
-    if (!pairsAssigned) {
-      setShowAssignPlayers(true);
-      return;
-    }
-    setShowAssignPlayers(false);
-  }, [pairsAssigned, roundIdx]);
+  const isLastRound = roundIdx === encounter.rounds.length - 1;
 
   // Calculate running score
   let homeWins = 0;
