@@ -1,5 +1,11 @@
 import { Match, FormatType, SetScore } from '@/types/encounter';
-import { getMatchWinner, needsTiebreak, getSetWinner, formatMatchScore } from '@/lib/scoring';
+import {
+  formatMatchScore,
+  getMatchWinner,
+  getSetWinner,
+  hasStraightSetsWinner,
+  needsTiebreak
+} from '@/lib/scoring';
 import { Minus, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { isTwoSetsFormat } from '@/lib/formatRules';
@@ -45,9 +51,12 @@ export default function MatchScoreCard({
 }: MatchScoreCardProps) {
   const winner = getMatchWinner(match, formatType);
 
-  const safeMatch = match.sets.length === 0
+  const initializedMatch = match.sets.length === 0
     ? { ...match, sets: [{ home: 0, away: 0 } as SetScore] }
     : match;
+  const safeMatch = hasStraightSetsWinner(initializedMatch, formatType)
+    ? { ...initializedMatch, sets: initializedMatch.sets.slice(0, 2) }
+    : initializedMatch;
 
   const updateSet = (setIndex: number, field: 'home' | 'away', value: number) => {
     const newSets = [...safeMatch.sets];
@@ -73,6 +82,13 @@ export default function MatchScoreCard({
         if (hw === 1 && aw === 1 && !newSets[2]) {
           newSets.push({ home: 0, away: 0, tiebreak: { home: 0, away: 0 } });
         }
+      }
+
+      if (
+        newSets.length > 2 &&
+        hasStraightSetsWinner({ ...safeMatch, sets: newSets }, formatType)
+      ) {
+        newSets.splice(2);
       }
     }
 

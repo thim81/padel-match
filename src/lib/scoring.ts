@@ -174,7 +174,11 @@ export function calculateSingleEncounterResult(
 export function formatMatchScore(match: Match, formatType: FormatType): string {
   if (match.sets.length === 0) return '—';
 
-  return match.sets
+  const displaySets = hasStraightSetsWinner(match, formatType)
+    ? match.sets.slice(0, 2)
+    : match.sets;
+
+  return displaySets
     .map((set, i) => {
       if (isTwoSetsFormat(formatType) && i === 2) {
         if (set.tiebreak) return `[${set.tiebreak.home}-${set.tiebreak.away}]`;
@@ -231,4 +235,13 @@ export function needsSuperTiebreak(match: Match, formatType: FormatType): boolea
     }
   });
   return homeWins === 1 && awayWins === 1;
+}
+
+export function hasStraightSetsWinner(match: Match, formatType: FormatType): boolean {
+  if (!isTwoSetsFormat(formatType) || match.sets.length < 2) return false;
+
+  const firstSetWinner = getSetWinner(match.sets[0], formatType, false);
+  const secondSetWinner = getSetWinner(match.sets[1], formatType, false);
+
+  return firstSetWinner !== null && firstSetWinner === secondSetWinner;
 }
