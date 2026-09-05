@@ -133,7 +133,10 @@ export function calculateEncounterResult(rounds: Round[], formatType: FormatType
   };
 }
 
-export function calculateSingleEncounterResult(match: Match, formatType: FormatType): EncounterResult {
+export function calculateSingleEncounterResult(
+  match: Match,
+  formatType: FormatType
+): EncounterResult {
   let homeMatchesWon = 0;
   let awayMatchesWon = 0;
   let homeGamesWon = 0;
@@ -154,8 +157,8 @@ export function calculateSingleEncounterResult(match: Match, formatType: FormatT
     }
   });
 
-  const encounterWinner: 'home' | 'away' = winner
-    ?? (homeGamesWon >= awayGamesWon ? 'home' : 'away');
+  const encounterWinner: 'home' | 'away' =
+    winner ?? (homeGamesWon >= awayGamesWon ? 'home' : 'away');
 
   return {
     homeMatchesWon,
@@ -164,7 +167,7 @@ export function calculateSingleEncounterResult(match: Match, formatType: FormatT
     awayGamesWon,
     homePointsWon,
     awayPointsWon,
-    winner: encounterWinner,
+    winner: encounterWinner
   };
 }
 

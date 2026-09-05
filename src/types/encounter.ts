@@ -58,8 +58,7 @@ export interface Encounter {
   result?: EncounterResult;
 }
 
-export interface LegacyEncounter
-  extends Omit<Encounter, 'formatFamily' | 'formatType'> {
+export interface LegacyEncounter extends Omit<Encounter, 'formatFamily' | 'formatType'> {
   format: LegacyMatchFormat;
   formatFamily?: never;
   formatType?: never;

@@ -60,7 +60,12 @@ function ensureDefaultTeam(teams: TeamSpace[]): TeamSpace[] {
   const nonDefault = teams.filter((team) => team.id !== DEFAULT_TEAM_ID && !team.isDefault);
 
   const defaultTeam = existingDefault
-    ? { ...existingDefault, id: DEFAULT_TEAM_ID, teamName: existingDefault.teamName || 'Personal', isDefault: true }
+    ? {
+        ...existingDefault,
+        id: DEFAULT_TEAM_ID,
+        teamName: existingDefault.teamName || 'Personal',
+        isDefault: true
+      }
     : createDefaultTeamSpace();
 
   return [defaultTeam, ...nonDefault];
@@ -85,7 +90,9 @@ function normalizeSyncSettings(raw: unknown): SyncSettings {
       .map((team) => {
         const parsed = parseSyncToken(team.syncToken);
         const isDefault = team.id === DEFAULT_TEAM_ID || team.isDefault;
-        const normalizedName = isDefault ? team.teamName || 'Personal' : parsed?.teamName || team.teamName || 'Team';
+        const normalizedName = isDefault
+          ? team.teamName || 'Personal'
+          : parsed?.teamName || team.teamName || 'Team';
         const normalizedSecret = parsed?.teamSecret || team.teamSecret || '';
         const hasSyncSpace = Boolean(normalizedSecret);
         return {
@@ -112,7 +119,9 @@ function normalizeSyncSettings(raw: unknown): SyncSettings {
       syncEnabled:
         typeof team.syncEnabled === 'boolean'
           ? team.syncEnabled
-          : (typeof candidate.syncEnabled === 'boolean' && team.id === activeTeamId ? candidate.syncEnabled : false)
+          : typeof candidate.syncEnabled === 'boolean' && team.id === activeTeamId
+            ? candidate.syncEnabled
+            : false
     }));
 
     return { teams: migratedTeams, activeTeamId, syncEnabled: false };
@@ -185,7 +194,7 @@ export function useSyncSettings() {
           return {
             ...team,
             teamName: trimmed,
-            syncToken: hasSecret ? createSyncToken(trimmed, team.teamSecret) : '',
+            syncToken: hasSecret ? createSyncToken(trimmed, team.teamSecret) : ''
           };
         });
         return {
