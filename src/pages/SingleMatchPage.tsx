@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useEncounterStore } from '@/hooks/useEncounterStore';

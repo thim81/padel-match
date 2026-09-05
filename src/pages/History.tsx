@@ -5,7 +5,7 @@ import { Encounter, Match, FormatType } from '@/types/encounter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Trophy, Plus, Trash2, CalendarDays } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { FORMAT_RULES, isTwoSetsFormat } from '@/lib/formatRules';
 import {
   AlertDialog,

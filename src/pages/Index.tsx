@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { Plus, Clock, Trophy, ChevronRight, Play, Users } from 'lucide-react';
 import { useEncounterStore } from '@/hooks/useEncounterStore';
